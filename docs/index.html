@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FIXED — every game, ready to play</title>
+<title>FIXED · every game, ready to play</title>
 <meta name="description" content="FIXED is a desktop client for online-fix.me: browse, download, extract, add to Steam and play. Zero setup, minimal clicks.">
 <style>
 :root { color-scheme: dark; --bg:#090C10; --surface:#121820; --elevated:#19212B; --line:rgba(213,225,237,.12); --text:#F2F5F7; --muted:#9AA6B5; --lime:#C6FF4A; }
@@ -58,7 +59,7 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px;
 <h1>Every game,<br>ready to play</h1>
 <p class="sub">Browse online-fix.me, download with one click, and FIXED handles the rest: extraction, Steam shortcut and a Play button. Zero setup, minimal clicks.</p>
 <div class="ctas">
-<a class="btn primary" href="https://github.com/edersonff/fixed/releases">Download</a>
+<a class="btn primary" id="dl-btn" href="https://github.com/edersonff/fixed/releases">Download</a>
 <a class="btn ghost" href="https://github.com/edersonff/fixed">Source code</a>
 </div>
 </section>
@@ -100,5 +101,32 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px;
 <span><a href="https://github.com/edersonff/fixed/releases">Releases</a> · <a href="https://github.com/edersonff/fixed">GitHub</a></span>
 </footer>
 </div>
+
+<script>
+(function () {
+  var btn = document.getElementById('dl-btn');
+  if (!btn) return;
+  var platform = navigator.userAgent.includes('Windows') ? 'windows'
+    : navigator.userAgent.includes('Mac') ? 'mac'
+    : 'linux';
+  fetch('https://api.github.com/repos/edersonff/fixed/releases/latest')
+    .then(function (r) { return r.json(); })
+    .then(function (rel) {
+      var assets = (rel.assets || []).map(function (a) { return a.browser_download_url; });
+      var pick = platform === 'windows'
+        ? assets.find(function (u) { return u.endsWith('.exe'); }) || assets.find(function (u) { return u.endsWith('.msi'); })
+        : assets.find(function (u) { return u.endsWith('.AppImage'); }) || assets.find(function (u) { return u.endsWith('.deb'); });
+      var label = platform === 'windows' ? 'Download for Windows' : platform === 'mac' ? 'Download for Linux' : 'Download for Linux';
+      if (pick) {
+        btn.textContent = label;
+        btn.href = pick;
+      } else {
+        btn.textContent = 'Get it on GitHub';
+      }
+      btn.classList.add('ready');
+    })
+    .catch(function () { btn.classList.add('ready'); });
+})();
+</script>
 </body>
 </html>
