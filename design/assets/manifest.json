@@ -1,0 +1,94 @@
+[
+ {
+  "title": "Forza Horizon 6",
+  "status": "ERROR: HTTP Error 404: Not Found"
+ },
+ {
+  "title": "Ready or Not",
+  "appid": 1144200,
+  "steam_name": "Ready or Not",
+  "bytes": 101697,
+  "status": "OK"
+ },
+ {
+  "title": "Crimson Moon",
+  "status": "ERROR: HTTP Error 404: Not Found"
+ },
+ {
+  "title": "Big Walk",
+  "appid": 1478500,
+  "steam_name": "Big Walk",
+  "bytes": 226029,
+  "status": "OK"
+ },
+ {
+  "title": "Lies of P",
+  "appid": 1627720,
+  "steam_name": "Lies of P",
+  "bytes": 169200,
+  "status": "OK"
+ },
+ {
+  "title": "MARVEL Tokon: Fighting Souls",
+  "status": "ERROR: HTTP Error 404: Not Found"
+ },
+ {
+  "title": "BOMBANANA!",
+  "status": "ERROR: HTTP Error 404: Not Found"
+ },
+ {
+  "title": "Halloween The Game",
+  "status": "ERROR: HTTP Error 404: Not Found"
+ },
+ {
+  "title": "Ragnarock",
+  "appid": 1345820,
+  "steam_name": "Ragnarock",
+  "bytes": 180773,
+  "status": "OK"
+ },
+ {
+  "title": "Valheim",
+  "appid": 892970,
+  "steam_name": "Valheim",
+  "bytes": 86254,
+  "status": "OK"
+ },
+ {
+  "title": "Bodycam",
+  "appid": 2406770,
+  "steam_name": "Bodycam",
+  "bytes": 137409,
+  "status": "OK"
+ },
+ {
+  "title": "Palworld",
+  "appid": 1623730,
+  "steam_name": "Palworld",
+  "bytes": 248956,
+  "status": "OK"
+ },
+ {
+  "title": "PAYDAY 3",
+  "appid": 1272080,
+  "steam_name": "PAYDAY 3",
+  "bytes": 167215,
+  "status": "OK"
+ },
+ {
+  "title": "No Man's Sky",
+  "appid": 275850,
+  "steam_name": "No Man's Sky",
+  "bytes": 227111,
+  "status": "OK"
+ },
+ {
+  "title": "PEAK",
+  "appid": 3527290,
+  "steam_name": "PEAK",
+  "assets": [
+   "hero_3527290.jpg"
+  ],
+  "status": "OK-HERO-ONLY"
+ }
+]
