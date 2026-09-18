@@ -48,8 +48,6 @@ const NAV: Array<{ id: View; label: string; Icon: typeof Home }> = [
 
 ];
 
-const PREF_KEY = "fixed-dl-pref";
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function formatDate(iso: string): string {
@@ -68,7 +66,11 @@ function formatDate(iso: string): string {
 
 function prettyCategory(raw: string): string {
 
-  return raw.replace("officialservers", "official servers");
+  return raw
+
+    .replace("officialservers", "official servers")
+
+    .replace(/(^|[- ])([a-z])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
 
 }
 
@@ -228,90 +230,6 @@ function GameCard({
 
 }
 
-function ChoiceModal({
-
-  game,
-
-  onPick,
-
-  onDismiss,
-
-}: {
-
-  game: GameEntry;
-
-  onPick: (mode: "torrent" | "manual", remember: boolean) => void;
-
-  onDismiss: () => void;
-
-}) {
-
-  const [remember, setRemember] = useState(false);
-
-  return (
-
-    <div className="choice-backdrop" onClick={onDismiss}>
-
-      <div className="choice" onClick={(event) => event.stopPropagation()}>
-
-        <h3>How do you want to download {displayTitle(game.title)}?</h3>
-
-        <p className="hint">
-
-          Torrent is the only lane FIXED can automate end to end. Some ISPs monitor P2P swarms, so the choice is yours.
-
-        </p>
-
-        <button type="button" className="choice-lane" onClick={() => onPick("torrent", remember)}>
-
-          <Download size={17} strokeWidth={2} />
-
-          <span className="name">Torrent · P2P</span>
-
-          <span className="kind">automatic download, extract and Steam setup</span>
-
-        </button>
-
-        <button type="button" className="choice-lane" onClick={() => onPick("manual", remember)}>
-
-          <Puzzle size={17} strokeWidth={2} />
-
-          <span className="name">Pick manually</span>
-
-          <span className="kind">open the game page and choose a mirror yourself</span>
-
-        </button>
-
-        <label className="remember">
-
-          <input
-
-            type="checkbox"
-
-            checked={remember}
-
-            onChange={(event) => setRemember(event.target.checked)}
-
-          />
-
-          Remember my choice
-
-        </label>
-
-        <button type="button" className="dismiss" onClick={onDismiss}>
-
-          Not now
-
-        </button>
-
-      </div>
-
-    </div>
-
-  );
-
-}
-
 function EmptyState({ title, hint, action, onAction }: { title: string; hint: string; action: string; onAction: () => void }) {
 
   return (
@@ -442,8 +360,6 @@ export default function App() {
 
   const [downloads, setDownloads] = useState<DownloadEntry[]>([]);
 
-  const [choiceGame, setChoiceGame] = useState<GameEntry | null>(null);
-
   const [quickBusy, setQuickBusy] = useState(false);
 
   useEffect(() => {
@@ -512,13 +428,40 @@ export default function App() {
 
       searchTerm
 
-        ? games.filter((game) => game.title.toLowerCase().includes(searchTerm))
+        ? games.filter((game) => {
+
+            const title = game.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+            const term = searchTerm.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+            return title.includes(term) || term.includes(title);
+
+          })
 
         : games,
 
     [games, searchTerm],
 
   );
+
+
+  useEffect(() => {
+
+    if (!searchTerm || busy || source !== "live") {
+
+      return;
+
+    }
+
+    if (visible.length > 0 || page >= 8) {
+
+      return;
+
+    }
+
+    loadPage(page + 1);
+
+  }, [searchTerm, visible.length, busy, page, source]);
 
   const trending = useMemo(
 
@@ -578,8 +521,6 @@ export default function App() {
 
   function openDetail(game: GameEntry) {
 
-    setChoiceGame(null);
-
     setSelected(game);
 
     setDetail(null);
@@ -624,8 +565,6 @@ export default function App() {
 
     setSelected(null);
 
-    setChoiceGame(null);
-
     setView("downloads");
 
     invoke<string>("start_torrent_download", { title: safeTitle, laneUrl: torrentLane.url })
@@ -648,51 +587,63 @@ export default function App() {
 
   }
 
-  function downloadPreference(): string | null {
+  function startHttp(game: GameEntry, hostersUrl: string) {
 
-    return window.localStorage.getItem(PREF_KEY);
+    const safeTitle = game.title.replace(/\//g, "_");
+
+    setDownloads((previous) => [
+
+      { game, state: "torrenting", lane: "http", parts: [], downloadedBytes: 0, totalBytes: 0 },
+
+      ...previous.filter((entry) => entry.game.pageUrl !== game.pageUrl),
+
+    ]);
+
+    setSelected(null);
+
+    setView("downloads");
+
+    invoke<string>("start_http_download", { title: safeTitle, laneUrl: hostersUrl })
+
+      .catch((reason: unknown) => {
+
+        console.error("start_http_download failed:", reason);
+
+        setDownloads((previous) =>
+
+          previous.map((entry) =>
+
+            entry.game.pageUrl === game.pageUrl ? { ...entry, state: "error" } : entry,
+
+          ),
+
+        );
+
+      });
+
+  }
+
+  function downloadWithDetail(game: GameEntry, gameDetail: GameDetail) {
+
+    const hostersLane = gameDetail.lanes.find((lane) => lane.kind === "hosters");
+
+    if (hostersLane) {
+
+      startHttp(game, hostersLane.url);
+
+      return;
+
+    }
+
+    startTorrent(game, gameDetail);
 
   }
 
   function requestDownload(game: GameEntry, gameDetail: GameDetail | null) {
 
-    const pref = downloadPreference();
-
-    if (!pref) {
-
-      if (gameDetail) {
-
-        setChoiceGame(game);
-
-        return;
-
-      }
-
-      openDetail(game);
-
-      return;
-
-    }
-
-    if (pref === "manual") {
-
-      if (!gameDetail) {
-
-        openDetail(game);
-
-        return;
-
-      }
-
-      openDetail(game);
-
-      return;
-
-    }
-
     if (gameDetail) {
 
-      startTorrent(game, gameDetail);
+      downloadWithDetail(game, gameDetail);
 
       return;
 
@@ -702,45 +653,9 @@ export default function App() {
 
     invoke<GameDetail>("game_detail", { url: game.pageUrl })
 
-      .then((result) => startTorrent(game, result))
+      .then((result) => downloadWithDetail(game, result))
 
       .catch((reason: unknown) => console.error("quick download failed:", reason))
-
-      .finally(() => setQuickBusy(false));
-
-  }
-
-  function pickChoice(mode: "torrent" | "manual", remember: boolean) {
-
-    if (!choiceGame) {
-
-      return;
-
-    }
-
-    if (remember) {
-
-      window.localStorage.setItem(PREF_KEY, mode);
-
-    }
-
-    if (mode === "manual") {
-
-      openDetail(choiceGame);
-
-      return;
-
-    }
-
-    setQuickBusy(true);
-
-    const game = choiceGame;
-
-    invoke<GameDetail>("game_detail", { url: game.pageUrl })
-
-      .then((result) => startTorrent(game, result))
-
-      .catch((reason: unknown) => console.error("choice download failed:", reason))
 
       .finally(() => setQuickBusy(false));
 
@@ -762,6 +677,10 @@ export default function App() {
 
     setSelected(null);
 
+    setQuery("");
+
+    setSearchTerm("");
+
     setView(target);
 
   }
@@ -772,7 +691,7 @@ export default function App() {
 
   }
 
-  const canLoadMore = source === "live" && page >= 1;
+  const canLoadMore = source === "live" && page >= 1 && !searchTerm;
 
   return (
 
@@ -838,7 +757,7 @@ export default function App() {
 
               <div className="bar-title">
 
-                <p className="eyebrow">FIXED / game library</p>
+                <p className="eyebrow">FIXED / Game Library</p>
 
                 <h1>
 
@@ -860,7 +779,7 @@ export default function App() {
 
                     value={query}
 
-                    placeholder="Search games"
+                    placeholder="Search Games"
 
                     onChange={(event) => setQuery(event.target.value)}
 
@@ -886,33 +805,31 @@ export default function App() {
 
                   <h1 className="hero-title">{displayTitle(featured.title)}</h1>
 
-                  <div className="meta-line">
+                  <p className="hero-meta-line">
 
-                    <span className="meta-chip">{prettyCategory(featured.category)}</span>
+                    {prettyCategory(featured.category)} · {formatDate(featured.publishedAt)}
 
-                    <span className="meta-chip">{formatDate(featured.publishedAt)}</span>
+                  </p>
 
-                  </div>
+                  <button type="button" className="hero-cta" onClick={() => openDetail(featured)}>
+
+                    <Download size={17} strokeWidth={2.2} />
+
+                    Download
+
+                  </button>
 
                 </div>
-
-                <button type="button" className="hero-cta" onClick={() => openDetail(featured)}>
-
-                  <Download size={17} strokeWidth={2.2} />
-
-                  Download
-
-                </button>
 
               </section>
 
             )}
 
-            {error && <p className="state">Failed to load: {error}</p>}
+            {error && <p className="state">Failed to Load: {error}</p>}
 
             <Rail
 
-              title="Trending now"
+              title="Trending Now"
 
               games={trendingRest}
 
@@ -928,7 +845,7 @@ export default function App() {
 
             <Rail
 
-              title="Recently added"
+              title="Recently Added"
 
               games={recent}
 
@@ -946,7 +863,7 @@ export default function App() {
 
               <header className="rail-head">
 
-                <h2>All games</h2>
+                <h2>All Games</h2>
 
               </header>
 
@@ -972,11 +889,25 @@ export default function App() {
 
               </div>
 
+              {searchTerm && visible.length === 0 && !busy && (
+
+                <div className="empty">
+
+                  <Search size={26} strokeWidth={1.5} />
+
+                  <h2>No games found</h2>
+
+                  <p>Nothing matches "{searchTerm}" in the catalog loaded so far. Try another name.</p>
+
+                </div>
+
+              )}
+
               {canLoadMore && (
 
                 <button type="button" className="loadmore" disabled={busy} onClick={() => loadPage(page + 1)}>
 
-                  {busy ? "Loading…" : "Load more"}
+                  {busy ? "Loading…" : "Load More"}
 
                 </button>
 
@@ -990,11 +921,11 @@ export default function App() {
 
           <EmptyState
 
-            title="Nothing here yet"
+            title="Nothing Here Yet"
 
-            hint="Games you install land on this shelf, ready to play with zero setup."
+            hint="Games You Install Land on This Shelf, Ready to Play With Zero Setup."
 
-            action="Browse games"
+            action="Browse Games"
 
             onAction={() => switchView("home")}
 
@@ -1008,19 +939,6 @@ export default function App() {
 
       </section>
 
-      {choiceGame && (
-
-        <ChoiceModal
-
-          game={choiceGame}
-
-          onPick={pickChoice}
-
-          onDismiss={() => setChoiceGame(null)}
-
-        />
-
-      )}
 
     </main>
 

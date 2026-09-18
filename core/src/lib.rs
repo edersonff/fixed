@@ -136,6 +136,10 @@ fn lane_kind(url: &str) -> Option<&'static str> {
 
         Some("drive")
 
+    } else if url.contains("pixeldrain.com") {
+
+        Some("mirror")
+
     } else if url.contains(":2053/uploads/") {
 
         Some("direct")
@@ -342,9 +346,119 @@ pub fn parse_detail(html: &str) -> GameDetail {
 
 }
 
+pub fn mirror_download_url(hosters_url: &str) -> Option<String> {
+
+    let bytes = fetch_bytes(hosters_url).ok()?;
+
+    let html = String::from_utf8_lossy(&bytes).to_string();
+
+    let mut best: Option<String> = None;
+
+    for word in html.split('"').chain(html.split('\'')) {
+
+        let trimmed = word.trim();
+
+        if let Some(rest) = trimmed.strip_prefix("https://pixeldrain.com/u/") {
+
+            let id: String = rest.chars().take_while(|c| c.is_ascii_alphanumeric()).collect();
+
+            if id.len() >= 6 {
+
+                best = Some(format!("https://pixeldrain.com/api/file/{}", id));
+
+            }
+
+        }
+
+    }
+
+    best
+
+}
+
+pub fn http_size(url: &str) -> u64 {
+
+    match ureq::head(url)
+
+        .set("User-Agent", USER_AGENT)
+
+        .timeout(std::time::Duration::from_secs(15))
+
+        .call()
+
+    {
+
+        Ok(response) => response
+
+            .header("Content-Length")
+
+            .and_then(|value| value.parse().ok())
+
+            .unwrap_or(0),
+
+        Err(_) => 0,
+
+    }
+
+}
+
+pub fn http_download(url: &str, dest_path: &str, progress: &dyn Fn(u64, u64)) -> Result<(), String> {
+
+    let response = ureq::get(url)
+
+        .set("User-Agent", USER_AGENT)
+
+        .timeout(std::time::Duration::from_secs(90))
+
+        .call()
+
+        .map_err(|error| format!("http get: {}", error))?;
+
+    let total: u64 = response
+
+        .header("Content-Length")
+
+        .and_then(|value| value.parse().ok())
+
+        .unwrap_or(0);
+
+    let mut reader = response.into_reader();
+
+    let mut file = std::fs::File::create(dest_path).map_err(|error| format!("create {}: {}", dest_path, error))?;
+
+    let mut buffer = vec![0u8; 262144];
+
+    let mut done: u64 = 0;
+
+    loop {
+
+        let read = reader
+
+            .read(&mut buffer)
+
+            .map_err(|error| format!("read: {}", error))?;
+
+        if read == 0 {
+
+            break;
+
+        }
+
+        std::io::Write::write_all(&mut file, &buffer[..read]).map_err(|error| format!("write: {}", error))?;
+
+        done += read as u64;
+
+        progress(done, total);
+
+    }
+
+    Ok(())
+
+}
+
 fn find_video_id(html: &str) -> String {
 
-    for marker in ["watch?v=", "ytimg.com/vi/", "youtube.com/embed/"] {
+    for marker in ["youtube.com/embed/", "youtube-nocookie.com/embed/", "watch?v=", "ytimg.com/vi/"] {
 
         if let Some(start) = html.find(marker) {
 
