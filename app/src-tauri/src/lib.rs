@@ -70,6 +70,8 @@ struct DownloadEngine {
 
     session: Arc<Session>,
 
+    cancels: std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>>,
+
 }
 
 #[tauri::command]
@@ -153,6 +155,22 @@ fn lane_parts(url: String) -> Vec<String> {
 
 }
 
+fn looks_like_rar(path: &std::path::Path) -> bool {
+
+    let Ok(mut file) = std::fs::File::open(path) else {
+
+        return false;
+
+    };
+
+    use std::io::Read;
+
+    let mut magic = [0u8; 7];
+
+    file.read_exact(&mut magic).is_ok() && &magic[..6] == b"Rar!\x1a\x07"
+
+}
+
 fn extract_first_rar(folder: &str) -> Result<u32, String> {
 
     let mut rars: Vec<std::path::PathBuf> = std::fs::read_dir(folder)
@@ -167,11 +185,43 @@ fn extract_first_rar(folder: &str) -> Result<u32, String> {
 
         .collect();
 
-    rars.sort();
+    rars.sort_by_key(|path| {
 
-    let first = rars.first().ok_or_else(|| String::from("no .rar found in download folder"))?;
+        let size = path.metadata().map(|meta| meta.len()).unwrap_or(0);
 
-    fix_core::extract_archive(&first.to_string_lossy(), folder)
+        std::cmp::Reverse(size)
+
+    });
+
+    let mut last_error = String::from("no .rar found in download folder");
+
+    for rar in &rars {
+
+        if !looks_like_rar(rar) {
+
+            eprintln!("[DL] skipping invalid archive: {}", rar.display());
+
+            continue;
+
+        }
+
+        match fix_core::extract_archive(&rar.to_string_lossy(), folder) {
+
+            Ok(count) => return Ok(count),
+
+            Err(error) => {
+
+                eprintln!("[DL] extract failed for {}: {}", rar.display(), error);
+
+                last_error = error;
+
+            }
+
+        }
+
+    }
+
+    Err(last_error)
 
 }
 
@@ -287,11 +337,49 @@ async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: Str
 
         .map_err(|error| log_fail(&title, "create game folder", error.to_string()))?;
 
+    if let Ok(entries) = std::fs::read_dir(&folder) {
+
+        for entry in entries.flatten() {
+
+            let path = entry.path();
+
+            let is_rar = path.extension().map(|ext| ext == "rar").unwrap_or(false);
+
+            if !is_rar {
+
+                continue;
+
+            }
+
+            match std::fs::remove_file(&path) {
+
+                Ok(()) => eprintln!("[DL] pre-clean removed stale archive: {}", path.display()),
+
+                Err(error) => eprintln!("[DL] pre-clean kept {}: {}", path.display(), error),
+
+            }
+
+        }
+
+    }
+
     let dest = format!("{}/game-download.rar", folder);
 
     let total = fix_core::http_size(&mirror_url);
 
     eprintln!("[DL] {}: http mirror {} ({} bytes)", title, mirror_url, total);
+
+    let cancel_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+
+    let engine = app.state::<DownloadEngine>();
+
+    engine.cancels
+
+        .lock()
+
+        .map_err(|error| log_fail(&title, "cancel registry", error.to_string()))?
+
+        .insert(safe_title.clone(), cancel_flag.clone());
 
     let done = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
 
@@ -347,11 +435,15 @@ async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: Str
 
     let dl_running = running.clone();
 
+    let dl_cancel = cancel_flag.clone();
+
     let pipeline_app = app.clone();
 
     let pipeline_title = title.clone();
 
     let pipeline_folder = folder.clone();
+
+    let pipeline_safe_title = safe_title.clone();
 
     tauri::async_runtime::spawn(async move {
 
@@ -365,9 +457,11 @@ async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: Str
 
         let flag_ref = dl_running.clone();
 
+        let cancel_ref = dl_cancel.clone();
+
         let result = tokio::task::spawn_blocking(move || {
 
-            let outcome = fix_core::http_download(&url, &dest_path, &|bytes_done, bytes_total| {
+            let outcome = fix_core::http_download(&url, &dest_path, &cancel_ref, &|bytes_done, bytes_total| {
 
                 done_ref.store(bytes_done, std::sync::atomic::Ordering::Relaxed);
 
@@ -388,6 +482,14 @@ async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: Str
         .await
 
         .unwrap_or_else(|error| Err(format!("join: {}", error)));
+
+        let engine = pipeline_app.state::<DownloadEngine>();
+
+        if let Ok(mut cancels) = engine.cancels.lock() {
+
+            cancels.remove(&pipeline_safe_title);
+
+        }
 
         match result {
 
@@ -455,19 +557,41 @@ async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: Str
 
             Err(error) => {
 
-                eprintln!("[DL] {}: http download FAILED: {}", pipeline_title, error);
+                if error == "cancelled" {
 
-                let _ = pipeline_app.emit("download-progress", DownloadProgress {
+                    eprintln!("[DL] {}: http download stopped by user", pipeline_title);
 
-                    title: pipeline_title.clone(),
+                    let _ = std::fs::remove_file(&dl_dest);
 
-                    downloaded_bytes: 0,
+                    let _ = pipeline_app.emit("download-progress", DownloadProgress {
 
-                    total_bytes: 0,
+                        title: pipeline_title.clone(),
 
-                    state: String::from("error"),
+                        downloaded_bytes: 0,
 
-                });
+                        total_bytes: 0,
+
+                        state: String::from("stopped"),
+
+                    });
+
+                } else {
+
+                    eprintln!("[DL] {}: http download FAILED: {}", pipeline_title, error);
+
+                    let _ = pipeline_app.emit("download-progress", DownloadProgress {
+
+                        title: pipeline_title.clone(),
+
+                        downloaded_bytes: 0,
+
+                        total_bytes: 0,
+
+                        state: String::from("error"),
+
+                    });
+
+                }
 
             }
 
@@ -785,13 +909,53 @@ async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<'_, 
     Ok(String::from("downloading"))
 
 }
-
 #[tauri::command]
+
 async fn cancel_all_downloads(engine: tauri::State<'_, DownloadEngine>) -> Result<(), String> {
 
     engine.session.cancellation_token().cancel();
 
     Ok(())
+
+}
+
+#[tauri::command]
+
+fn game_assets(title: String) -> Option<fix_core::GameAssets> {
+
+    let assets = fix_core::game_assets(&title)?;
+
+    eprintln!("[ASSETS] {}: appid {} hero {}", title, assets.appid, assets.hero_url);
+
+    Some(assets)
+
+}
+
+#[tauri::command]
+
+fn cancel_download(engine: tauri::State<'_, DownloadEngine>, title: String) -> Result<bool, String> {
+
+    let safe_title = title.replace('/', "_");
+
+    let cancels = engine.cancels.lock().map_err(|error| error.to_string())?;
+
+    let found = match cancels.get(&safe_title) {
+
+        Some(flag) => {
+
+            flag.store(true, std::sync::atomic::Ordering::Relaxed);
+
+            eprintln!("[DL] {}: cancel requested", title);
+
+            true
+
+        }
+
+        None => false,
+
+    };
+
+    Ok(found)
 
 }
 
@@ -818,9 +982,9 @@ pub fn run() {
 
         .plugin(tauri_plugin_dialog::init())
 
-        .manage(DownloadEngine { session })
+        .manage(DownloadEngine { session, cancels: std::sync::Mutex::new(std::collections::HashMap::new()) })
 
-        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, launch_game, install_plugin])
+        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin])
 
         .run(tauri::generate_context!())
 

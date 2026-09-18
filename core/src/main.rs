@@ -4,7 +4,6 @@ use fix_core::parse_detail;
 
 use fix_core::parse_home;
 
-mod assets;
 
 fn main() {
 
@@ -106,7 +105,7 @@ fn main() {
 
     println!("video: {}", detail.video_id);
 
-    match assets::save_app_assets(1144200, "assets") {
+    match fix_core::save_app_assets(1144200, "assets") {
 
         Ok(saved) => for line in saved {
 
