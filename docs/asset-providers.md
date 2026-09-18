@@ -1,9 +1,9 @@
-# Asset Providers — online-fix.me desktop client (Rust/Tauri)
+# Asset Providers · online-fix.me desktop client (Rust/Tauri)
 
 Researched 2026-09-16. Every `VERIFIED` claim was fetched/measure-run this session.
 `UNVERIFIED` = could not be confirmed live; treat as hypothesis.
 
-## TL;DR — recommended chains
+## TL;DR · recommended chains
 
 | Asset | PRIMARY | Fallback 1 | Fallback 2 |
 |---|---|---|---|

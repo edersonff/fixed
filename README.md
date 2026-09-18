@@ -11,11 +11,11 @@ Desktop client for [online-fix.me](https://online-fix.me): browse, download, ext
 
 One pipeline, end to end. You click Download once, FIXED does the rest:
 
-1. **Download** — HTTP mirror lane first (Pixeldrain-backed, resumable range requests), torrent as automatic fallback. Live progress with lane badge.
-2. **Extract** — password handled automatically, installers cleaned up after install.
-3. **Steam** — non-Steam shortcut written into your library with Proton launch options, idempotent.
-4. **Play** — one click launches the game through Steam.
-5. **Plugins** — drop a BepInEx zip; Fix Repair is reapplied on top automatically.
+1. **Download** · HTTP mirror lane first (Pixeldrain-backed, resumable range requests), torrent as automatic fallback. Live progress with lane badge.
+2. **Extract** · password handled automatically, installers cleaned up after install.
+3. **Steam** · non-Steam shortcut written into your library with Proton launch options, idempotent.
+4. **Play** · one click launches the game through Steam.
+5. **Plugins** · drop a BepInEx zip; Fix Repair is reapplied on top automatically.
 
 ![Game detail](docs/screenshots/detail.png)
 
