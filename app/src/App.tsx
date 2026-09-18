@@ -6,6 +6,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { listen } from "@tauri-apps/api/event";
 
+import { AnimatePresence, MotionConfig, motion, type Variants } from "framer-motion";
+
 import { ChevronRight } from "lucide-react";
 
 import { Download } from "lucide-react";
@@ -37,6 +39,102 @@ import type { GamesPage } from "./types";
 import type { View } from "./types";
 
 import "./App.css";
+
+const EASE_DECEL = [0.05, 0.7, 0.1, 1] as const;
+
+const fadeRiseVariants: Variants = {
+
+  hidden: { opacity: 0, filter: "blur(8px)", y: 10 },
+
+  visible: (index = 0) => ({
+
+    opacity: 1,
+
+    filter: "blur(0px)",
+
+    y: 0,
+
+    transition: { duration: 0.3, delay: index * 0.04, ease: EASE_DECEL },
+
+  }),
+
+  exit: {
+
+    opacity: 0,
+
+    filter: "blur(8px)",
+
+    y: 10,
+
+    transition: { duration: 0.15, ease: EASE_DECEL },
+
+  },
+
+};
+
+const heroVariants: Variants = {
+
+  ...fadeRiseVariants,
+
+  visible: (index = 0) => ({
+
+    opacity: 1,
+
+    filter: "blur(0px)",
+
+    y: 0,
+
+    transition: { duration: 0.3, delay: index * 0.06, ease: EASE_DECEL },
+
+  }),
+
+};
+
+const viewVariants: Variants = {
+
+  hidden: { opacity: 0, filter: "blur(6px)", scale: 0.995, y: 4 },
+
+  visible: (mode = "view") => ({
+
+    opacity: 1,
+
+    filter: "blur(0px)",
+
+    scale: 1,
+
+    y: 0,
+
+    transition: {
+
+      duration: mode === "detail" ? 0.24 : 0.2,
+
+      ease: EASE_DECEL,
+
+    },
+
+  }),
+
+  exit: (mode = "view") => ({
+
+    opacity: 0,
+
+    filter: mode === "detail" ? "blur(8px)" : "blur(0px)",
+
+    scale: 0.995,
+
+    y: mode === "detail" ? 10 : 0,
+
+    transition: {
+
+      duration: mode === "detail" ? 0.15 : 0.2,
+
+      ease: EASE_DECEL,
+
+    },
+
+  }),
+
+};
 
 const NAV: Array<{ id: View; label: string; Icon: typeof Home }> = [
 
@@ -114,9 +212,43 @@ function Wordmark() {
 
 }
 
+function LoadingDots({ label = "Loading" }: { label?: string }) {
+
+  return (
+
+    <span className="loading-status" aria-label={label}>
+
+      <span className="sr-only">{label}</span>
+
+      <span className="loading-dots" aria-hidden="true">
+
+        {[0, 1, 2].map((index) => (
+
+          <motion.span
+
+            key={index}
+
+            animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }}
+
+            transition={{ duration: 0.4, delay: index * 0.12, repeat: Infinity, ease: "easeInOut" }}
+
+          />
+
+        ))}
+
+      </span>
+
+    </span>
+
+  );
+
+}
+
 function GameCard({
 
   game,
+
+  index,
 
   onSelect,
 
@@ -127,6 +259,8 @@ function GameCard({
 }: {
 
   game: GameEntry;
+
+  index: number;
 
   onSelect: (game: GameEntry) => void;
 
@@ -150,9 +284,19 @@ function GameCard({
 
   return (
 
-    <article
+    <motion.article
 
       className="card"
+
+      variants={fadeRiseVariants}
+
+      initial="hidden"
+
+      animate="visible"
+
+      exit="exit"
+
+      custom={index}
 
       role="button"
 
@@ -162,7 +306,7 @@ function GameCard({
 
       onClick={() => onSelect(game)}
 
-      onKeyDown={(event) => {
+      onKeyDown={(event: React.KeyboardEvent) => {
 
         if (event.key === "Enter" || event.key === " ") {
 
@@ -182,15 +326,19 @@ function GameCard({
 
         <div className="poster-overlay">
 
-          <button
+          <motion.button
 
             type="button"
 
             className="quick-dl"
 
+            whileHover={{ y: -2 }}
+
+            whileTap={{ scale: 0.97 }}
+
             disabled={quickBusy}
 
-            onClick={(event) => {
+            onClick={(event: React.MouseEvent) => {
 
               event.stopPropagation();
 
@@ -204,7 +352,7 @@ function GameCard({
 
             Get
 
-          </button>
+          </motion.button>
 
         </div>
 
@@ -224,7 +372,7 @@ function GameCard({
 
       </div>
 
-    </article>
+    </motion.article>
 
   );
 
@@ -236,17 +384,37 @@ function EmptyState({ title, hint, action, onAction }: { title: string; hint: st
 
     <div className="empty">
 
-      <Puzzle size={28} strokeWidth={1.5} />
+      <motion.div
 
-      <h2>{title}</h2>
+        className="empty-icon"
 
-      <p>{hint}</p>
+        animate={{ y: [0, -4, 0] }}
 
-      <button type="button" onClick={onAction}>
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+
+      >
+
+        <Puzzle size={28} strokeWidth={1.5} />
+
+      </motion.div>
+
+      <motion.h2 variants={fadeRiseVariants} initial="hidden" animate="visible" custom={0}>
+
+        {title}
+
+      </motion.h2>
+
+      <motion.p variants={fadeRiseVariants} initial="hidden" animate="visible" custom={1}>
+
+        {hint}
+
+      </motion.p>
+
+      <motion.button type="button" whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} onClick={onAction}>
 
         {action}
 
-      </button>
+      </motion.button>
 
     </div>
 
@@ -298,21 +466,37 @@ function Rail({
 
         <h2>{title}</h2>
 
-        <button type="button" className="seeall" onClick={onSeeAll}>
+        <motion.button
+
+          type="button"
+
+          className="seeall"
+
+          whileHover={{ y: -2 }}
+
+          whileTap={{ scale: 0.97 }}
+
+          onClick={onSeeAll}
+
+        >
 
           See all <ChevronRight size={14} strokeWidth={2} />
 
-        </button>
+        </motion.button>
 
       </header>
 
       <div className="rail">
 
-        {games.map((game) => (
+        <AnimatePresence mode="popLayout">
+
+          {games.map((game, index) => (
 
           <GameCard
 
             game={game}
+
+            index={index}
 
             onSelect={onSelect}
 
@@ -324,7 +508,9 @@ function Rail({
 
           />
 
-        ))}
+          ))}
+
+        </AnimatePresence>
 
       </div>
 
@@ -395,6 +581,12 @@ export default function App() {
         previous.map((entry) => {
 
           if (entry.game.title.replace(/\//g, "_") !== title) {
+
+            return entry;
+
+          }
+
+          if (mapped === "torrenting" && (entry.state === "extracting" || entry.state === "ready")) {
 
             return entry;
 
@@ -673,6 +865,22 @@ export default function App() {
 
   }
 
+  function cancelDownload(entry: DownloadEntry) {
+
+    invoke("cancel_download", { title: entry.game.title }).catch(() => undefined);
+
+    setDownloads((previous) =>
+
+      previous.map((current) =>
+
+        current.game.pageUrl === entry.game.pageUrl ? { ...current, state: "stopped" } : current,
+
+      ),
+
+    );
+
+  }
+
   function switchView(target: View) {
 
     setSelected(null);
@@ -695,7 +903,9 @@ export default function App() {
 
   return (
 
-    <main className="shell">
+    <MotionConfig reducedMotion="user">
+
+      <main className="shell">
 
       <aside className="sidebar">
 
@@ -705,7 +915,7 @@ export default function App() {
 
           {NAV.map(({ id, label, Icon }) => (
 
-            <button
+            <motion.button
 
               key={id}
 
@@ -715,6 +925,10 @@ export default function App() {
 
               className={view === id && !selected ? "nav-item active" : "nav-item"}
 
+              whileHover={{ y: -2 }}
+
+              whileTap={{ scale: 0.97 }}
+
               onClick={() => switchView(id)}
 
             >
@@ -723,7 +937,7 @@ export default function App() {
 
               <span>{label}</span>
 
-            </button>
+            </motion.button>
 
           ))}
 
@@ -733,7 +947,27 @@ export default function App() {
 
       </aside>
 
-      <section className="content">
+        <section className="content">
+
+          <AnimatePresence mode="wait">
+
+            <motion.div
+
+              key={selected ? `detail-${selected.pageUrl}` : view}
+
+              className="view-frame"
+
+              variants={viewVariants}
+
+              initial="hidden"
+
+              animate="visible"
+
+              exit="exit"
+
+              custom={selected ? "detail" : "view"}
+
+            >
 
         {selected ? (
 
@@ -797,33 +1031,61 @@ export default function App() {
 
             {featured && (
 
-              <section className="hero">
+              <motion.section className="hero" initial="hidden" animate="visible" variants={fadeRiseVariants}>
 
                 <img className="hero-bg" src={featured.posterUrl} alt="" referrerPolicy="no-referrer" />
 
                 <div className="hero-copy">
 
-                  <p className="eyebrow">Featured</p>
+                  <motion.p className="eyebrow" variants={heroVariants} initial="hidden" animate="visible" custom={0}>
 
-                  <h1 className="hero-title">{displayTitle(featured.title)}</h1>
+                    Featured
 
-                  <p className="hero-meta-line">
+                  </motion.p>
+
+                  <motion.h1 className="hero-title" variants={heroVariants} initial="hidden" animate="visible" custom={1}>
+
+                    {displayTitle(featured.title)}
+
+                  </motion.h1>
+
+                  <motion.p className="hero-meta-line" variants={heroVariants} initial="hidden" animate="visible" custom={2}>
 
                     {prettyCategory(featured.category)} · {formatDate(featured.publishedAt)}
 
-                  </p>
+                  </motion.p>
 
-                  <button type="button" className="hero-cta" onClick={() => openDetail(featured)}>
+                  <motion.button
+
+                    type="button"
+
+                    className="hero-cta"
+
+                    variants={heroVariants}
+
+                    initial="hidden"
+
+                    animate="visible"
+
+                    custom={3}
+
+                    whileHover={{ y: -2 }}
+
+                    whileTap={{ scale: 0.97 }}
+
+                    onClick={() => openDetail(featured)}
+
+                  >
 
                     <Download size={17} strokeWidth={2.2} />
 
                     Download
 
-                  </button>
+                  </motion.button>
 
                 </div>
 
-              </section>
+              </motion.section>
 
             )}
 
@@ -871,11 +1133,15 @@ export default function App() {
 
               <div className="grid">
 
-                {visible.map((game) => (
+                <AnimatePresence mode="popLayout">
+
+                  {visible.map((game, index) => (
 
                   <GameCard
 
                     game={game}
+
+                    index={index}
 
                     onSelect={openDetail}
 
@@ -887,31 +1153,67 @@ export default function App() {
 
                   />
 
-                ))}
+                  ))}
+
+                </AnimatePresence>
 
               </div>
 
               {searchTerm && visible.length === 0 && !busy && (
 
-                <div className="empty">
+                <motion.div className="empty" initial="hidden" animate="visible" variants={fadeRiseVariants}>
 
-                  <Search size={26} strokeWidth={1.5} />
+                  <motion.div
 
-                  <h2>No games found</h2>
+                    className="empty-icon"
 
-                  <p>Nothing matches "{searchTerm}" in the catalog loaded so far. Try another name.</p>
+                    animate={{ y: [0, -4, 0] }}
 
-                </div>
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+
+                  >
+
+                    <Search size={26} strokeWidth={1.5} />
+
+                  </motion.div>
+
+                  <motion.h2 variants={fadeRiseVariants} custom={1}>
+
+                    No games found
+
+                  </motion.h2>
+
+                  <motion.p variants={fadeRiseVariants} custom={2}>
+
+                    Nothing matches "{searchTerm}" in the catalog loaded so far. Try another name.
+
+                  </motion.p>
+
+                </motion.div>
 
               )}
 
               {canLoadMore && (
 
-                <button type="button" className="loadmore" disabled={busy} onClick={() => loadPage(page + 1)}>
+                <motion.button
 
-                  {busy ? "Loading…" : "Load More"}
+                  type="button"
 
-                </button>
+                  className="loadmore"
+
+                  disabled={busy}
+
+                  whileHover={{ y: -2 }}
+
+                  whileTap={{ scale: 0.97 }}
+
+                  onClick={() => loadPage(page + 1)}
+
+                >
+
+                  {busy ? <LoadingDots label="Loading more games" /> : "Load More"}
+
+                </motion.button>
 
               )}
 
@@ -935,14 +1237,30 @@ export default function App() {
 
         ) : (
 
-          <DownloadsView entries={downloads} onBrowse={() => switchView("home")} onStopAll={stopAll} />
+          <DownloadsView
+
+            entries={downloads}
+
+            onBrowse={() => switchView("home")}
+
+            onStopAll={stopAll}
+
+            onCancel={cancelDownload}
+
+          />
 
         )}
 
-      </section>
+            </motion.div>
+
+          </AnimatePresence>
+
+        </section>
 
 
-    </main>
+      </main>
+
+    </MotionConfig>
 
   );
 

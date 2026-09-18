@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { ArrowLeft } from "lucide-react";
 
 import { Cloud } from "lucide-react";
@@ -14,11 +16,61 @@ import { Play } from "lucide-react";
 
 import { Wrench } from "lucide-react";
 
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { motion, type Variants } from "framer-motion";
 
 import type { GameDetail } from "./types";
 
 import type { GameEntry } from "./types";
+
+const detailItemVariants: Variants = {
+
+  hidden: { opacity: 0, filter: "blur(8px)", y: 10 },
+
+  visible: (index = 0) => ({
+
+    opacity: 1,
+
+    filter: "blur(0px)",
+
+    y: 0,
+
+    transition: { duration: 0.24, delay: index * 0.06, ease: [0.05, 0.7, 0.1, 1] },
+
+  }),
+
+};
+
+function LoadingDots({ label = "Loading" }: { label?: string }) {
+
+  return (
+
+    <span className="loading-status" aria-label={label}>
+
+      <span className="sr-only">{label}</span>
+
+      <span className="loading-dots" aria-hidden="true">
+
+        {[0, 1, 2].map((index) => (
+
+          <motion.span
+
+            key={index}
+
+            animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }}
+
+            transition={{ duration: 0.4, delay: index * 0.12, repeat: Infinity, ease: "easeInOut" }}
+
+          />
+
+        ))}
+
+      </span>
+
+    </span>
+
+  );
+
+}
 
 const LANE_ICONS: Record<string, typeof Globe> = {
 
@@ -144,19 +196,33 @@ export function DetailView({
 
   const title = displayTitle(game.title);
 
+  const [videoPlaying, setVideoPlaying] = useState(false);
+
   return (
 
-    <div className="detail">
+    <motion.div className="detail" initial="hidden" animate="visible" variants={detailItemVariants}>
 
       <header className="detail-bar">
 
-        <button type="button" className="back" onClick={onBack}>
+        <motion.button
+
+          type="button"
+
+          className="back"
+
+          whileHover={{ y: -2 }}
+
+          whileTap={{ scale: 0.97 }}
+
+          onClick={onBack}
+
+        >
 
           <ArrowLeft size={16} strokeWidth={1.8} />
 
           Back to Home
 
-        </button>
+        </motion.button>
 
         <span className="source">Game Detail</span>
 
@@ -167,6 +233,20 @@ export function DetailView({
         <div className="poster detail-art">
 
           <img src={game.posterUrl} alt={`${title} poster`} referrerPolicy="no-referrer" />
+
+          {busy && (
+
+            <motion.div
+
+              className="poster-skeleton"
+
+              animate={{ backgroundPosition: ["200% 0", "-100% 0"] }}
+
+              transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+
+            />
+
+          )}
 
         </div>
 
@@ -206,7 +286,7 @@ export function DetailView({
 
           </div>
 
-          <button
+          <motion.button
 
             type="button"
 
@@ -216,25 +296,51 @@ export function DetailView({
 
             disabled={!detail || detail.lanes.length === 0}
 
+            whileHover={{ y: -2 }}
+
+            whileTap={{ scale: 0.97 }}
+
           >
 
             <Download size={17} strokeWidth={2.2} />
 
             Download
 
-          </button>
+          </motion.button>
 
         </div>
 
-        {busy && <p className="state">Loading Build Info...</p>}
+        {busy && (
+
+          <motion.p className="state" initial="hidden" animate="visible" variants={detailItemVariants}>
+
+            Loading Build Info <LoadingDots label="Loading build information" />
+
+          </motion.p>
+
+        )}
 
         {detail && detail.lanes.length > 0 && (
 
-          <div className="lanes">
+          <motion.div className="lanes" initial="hidden" animate="visible" variants={detailItemVariants}>
 
-            {detail.lanes.map((lane) => (
+            {detail.lanes.map((lane, index) => (
 
-              <div key={lane.kind} className={lane.kind === "torrent" ? "lane-row torrent" : "lane-row"}>
+              <motion.div
+
+                key={lane.kind}
+
+                className={lane.kind === "torrent" ? "lane-row torrent" : "lane-row"}
+
+                variants={detailItemVariants}
+
+                initial="hidden"
+
+                animate="visible"
+
+                custom={index}
+
+              >
 
                 <LaneIcon kind={lane.kind} />
 
@@ -250,11 +356,11 @@ export function DetailView({
 
                 )}
 
-              </div>
+              </motion.div>
 
             ))}
 
-          </div>
+          </motion.div>
 
         )}
 
@@ -270,21 +376,23 @@ export function DetailView({
 
         )}
 
-        {detail?.videoId && (
+        {detail?.videoId && !videoPlaying && (
 
-          <button
+          <motion.button
 
             type="button"
 
             className="review-card"
 
+            aria-label="Play the video review"
+
+            whileHover={{ y: -2 }}
+
+            whileTap={{ scale: 0.99 }}
+
             onClick={() => {
 
-              openUrl(`https://www.youtube.com/watch?v=${detail.videoId}`).catch((reason: unknown) =>
-
-                console.error("open review failed:", reason),
-
-              );
+              setVideoPlaying(true);
 
             }}
 
@@ -310,7 +418,37 @@ export function DetailView({
 
             <span className="review-copy">Watch the Video Review</span>
 
-          </button>
+          </motion.button>
+
+        )}
+
+        {detail?.videoId && videoPlaying && (
+
+          <motion.div
+
+            className="review-card review-player"
+
+            initial={{ opacity: 0, filter: "blur(8px)" }}
+
+            animate={{ opacity: 1, filter: "blur(0px)" }}
+
+            transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
+
+          >
+
+            <iframe
+
+              src={`https://www.youtube-nocookie.com/embed/${detail.videoId}?autoplay=1&rel=0`}
+
+              title={`${game.title} video review`}
+
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+
+              allowFullScreen
+
+            />
+
+          </motion.div>
 
         )}
 
@@ -322,7 +460,7 @@ export function DetailView({
 
       </section>
 
-    </div>
+    </motion.div>
 
   );
 
