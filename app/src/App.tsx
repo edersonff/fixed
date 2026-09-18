@@ -711,6 +711,8 @@ export default function App() {
 
               type="button"
 
+              title={label}
+
               className={view === id && !selected ? "nav-item active" : "nav-item"}
 
               onClick={() => switchView(id)}
