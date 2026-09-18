@@ -12,24 +12,6 @@ import { Puzzle } from "lucide-react";
 
 import type { DownloadEntry } from "./types";
 
-function displayTitle(raw: string): string {
-
-  return raw.trim().split(/\s+/).map((word) => {
-
-    if (/^(?:[A-Za-z]\.){2,}[A-Za-z]?/.test(word)) {
-
-      return word;
-
-    }
-
-    const normalized = word.toLocaleLowerCase();
-
-    return normalized.replace(/^[a-zà-ÿ]/i, (letter) => letter.toLocaleUpperCase());
-
-  }).join(" ");
-
-}
-
 function megabytes(bytes: number): string {
 
   return `${(bytes / 1_000_000).toFixed(1)} MB`;
@@ -48,7 +30,7 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
       multiple: false,
 
-      filters: [{ name: "Plugin package", extensions: ["zip", "rar", "dll"] }],
+      filters: [{ name: "Plugin Package", extensions: ["zip", "rar", "dll"] }],
 
     });
 
@@ -60,9 +42,9 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
     invoke<number>("install_plugin", { title: entry.game.title, archivePath: selected })
 
-      .then((count) => setPluginMsg(`Plugin installed. ${count} file${count === 1 ? "" : "s"}`))
+      .then((count) => setPluginMsg(`Plugin Installed. ${count} File${count === 1 ? "" : "s"}`))
 
-      .catch((reason: unknown) => setPluginMsg(`Plugin failed: ${String(reason)}`));
+      .catch((reason: unknown) => setPluginMsg(`Plugin Failed: ${String(reason)}`));
 
   }
 
@@ -76,7 +58,7 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
     entry.state === "resolving"
 
-      ? "Resolving mirrors…"
+      ? "Resolving Mirrors…"
 
       : entry.state === "torrenting"
 
@@ -88,7 +70,7 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
           : entry.state === "ready"
 
-            ? "Ready to play"
+            ? "Ready to Play"
 
             : entry.state === "stopped"
 
@@ -96,9 +78,9 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
               : entry.state === "parts"
 
-                ? `${entry.parts.length} file${entry.parts.length === 1 ? "" : "s"} found. Manual lane`
+                ? `${entry.parts.length} File${entry.parts.length === 1 ? "" : "s"} Found. Manual Lane`
 
-                : "Could not resolve this lane";
+                : "Could Not Resolve This Lane";
 
   return (
 
@@ -114,11 +96,11 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
         <h2>
 
-          {displayTitle(entry.game.title)}
+          {entry.game.title}
 
-          {entry.lane === "torrent" && entry.state === "torrenting" && (
+          {entry.state === "torrenting" && (
 
-            <span className="lane-badge">P2P · torrent</span>
+            <span className="lane-badge">{entry.lane === "http" ? "HTTP · mirror" : "P2P · torrent"}</span>
 
           )}
 
@@ -190,7 +172,7 @@ function EntryCard({ entry }: { entry: DownloadEntry }) {
 
               <PackagePlus size={14} strokeWidth={2} />
 
-              Add plugin
+              Add Plugin
 
             </button>
 
@@ -234,13 +216,13 @@ export function DownloadsView({
 
         <Puzzle size={28} strokeWidth={1.5} />
 
-        <h2>No active downloads</h2>
+        <h2>No Active Downloads</h2>
 
-        <p>Pick a game and FIXED handles mirrors, extraction and setup for you.</p>
+        <p>Pick a Game and FIXED Handles Mirrors, Extraction and Setup for You.</p>
 
         <button type="button" onClick={onBrowse}>
 
-          Find a game
+          Find a Game
 
         </button>
 
@@ -264,7 +246,7 @@ export function DownloadsView({
 
         <div className="bar-title">
 
-          <p className="eyebrow">Active queue</p>
+          <p className="eyebrow">Active Queue</p>
 
           <h1>Downloads</h1>
 
@@ -274,7 +256,7 @@ export function DownloadsView({
 
           <button type="button" className="ghost" onClick={onStopAll}>
 
-            Stop all
+            Stop All
 
           </button>
 

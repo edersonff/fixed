@@ -42,21 +42,21 @@ const LANE_ICONS: Record<string, typeof Globe> = {
 
 const LANE_NOTES: Record<string, string> = {
 
-  hosters: "Recommended mirror",
+  hosters: "Recommended Mirror",
 
-  drive: "Fast mirror",
+  drive: "Fast Mirror",
 
-  direct: "Site files",
+  direct: "Site Files",
 
-  mega: "Mega mirror",
+  mega: "Mega Mirror",
 
-  yandex: "Yandex Disk mirror",
+  yandex: "Yandex Disk Mirror",
 
-  "google-drive": "Google Drive mirror",
+  "google-drive": "Google Drive Mirror",
 
   mirror: "Mirror",
 
-  torrent: "P2P · optional",
+  torrent: "P2P · Optional",
 
 };
 
@@ -102,7 +102,7 @@ function prettyCategory(raw: string): string {
 
     .replace("officialservers", "official servers")
 
-    .replace(/(^|\s)([a-z])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
+    .replace(/(^|[- ])([a-z])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
 
 }
 
@@ -158,7 +158,7 @@ export function DetailView({
 
         </button>
 
-        <span className="source">Game detail</span>
+        <span className="source">Game Detail</span>
 
       </header>
 
@@ -174,7 +174,7 @@ export function DetailView({
 
         <div className="info">
 
-          <p className="eyebrow">Game detail</p>
+          <p className="eyebrow">Game Detail</p>
 
           <h1 id="detail-title">{title}</h1>
 
@@ -184,7 +184,7 @@ export function DetailView({
 
             <span className="chip">Published {published}</span>
 
-            <span className="views-chip">{game.views.toLocaleString("en-US")} views</span>
+            <span className="views-chip">{game.views.toLocaleString("en-US")} Views</span>
 
           </div>
 
@@ -200,9 +200,9 @@ export function DetailView({
 
           <div>
 
-            <p className="eyebrow">Download lanes</p>
+            <p className="eyebrow">Download Lanes</p>
 
-            <h2>Choose a source</h2>
+            <h2>Choose a Source</h2>
 
           </div>
 
@@ -226,7 +226,7 @@ export function DetailView({
 
         </div>
 
-        {busy && <p className="state">Loading build info...</p>}
+        {busy && <p className="state">Loading Build Info...</p>}
 
         {detail && detail.lanes.length > 0 && (
 
@@ -240,13 +240,13 @@ export function DetailView({
 
                 <span className="name">{displayLane(lane.kind)}</span>
 
-                <span className="kind">{LANE_NOTES[lane.kind] ?? "Available source"}</span>
+                <span className="kind">{LANE_NOTES[lane.kind] ?? "Available Source"}</span>
 
                 <span className="spacer">Available</span>
 
                 {lane.kind === "torrent" && (
 
-                  <p className="warning">Some ISPs monitor torrent swarms. Mirrors are safer where P2P is watched.</p>
+                  <p className="warning">Some ISPs Monitor Torrent Swarms. Mirrors Are Safer Where P2P Is Watched.</p>
 
                 )}
 
@@ -264,7 +264,7 @@ export function DetailView({
 
             <Wrench size={13} strokeWidth={1.8} />
 
-            Dead links? Fix Repair is included automatically.
+            Dead Links? Fix Repair Is Included Automatically.
 
           </p>
 
@@ -308,7 +308,7 @@ export function DetailView({
 
             </span>
 
-            <span className="review-copy">Watch the video review</span>
+            <span className="review-copy">Watch the Video Review</span>
 
           </button>
 
@@ -316,7 +316,7 @@ export function DetailView({
 
         {detail && !busy && detail.lanes.length === 0 && (
 
-          <p className="state">Could not load download lanes.</p>
+          <p className="state">Could Not Load Download Lanes.</p>
 
         )}
 

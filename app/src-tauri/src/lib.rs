@@ -269,6 +269,218 @@ fn delete_installers(folder: &str) {
 
 #[tauri::command]
 
+async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: String) -> Result<String, String> {
+
+    let mirror_url = fix_core::mirror_download_url(&lane_url)
+
+        .ok_or_else(|| log_fail(&title, "mirror resolve", String::from("no direct mirror in hosters lane")))?;
+
+    let home = std::env::var("HOME")
+
+        .map_err(|error| log_fail(&title, "HOME env", error.to_string()))?;
+
+    let safe_title = title.replace('/', "_");
+
+    let folder = format!("{}/games/{}", home, safe_title);
+
+    std::fs::create_dir_all(&folder)
+
+        .map_err(|error| log_fail(&title, "create game folder", error.to_string()))?;
+
+    let dest = format!("{}/game-download.rar", folder);
+
+    let total = fix_core::http_size(&mirror_url);
+
+    eprintln!("[DL] {}: http mirror {} ({} bytes)", title, mirror_url, total);
+
+    let done = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+
+    let total_seen = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(total));
+
+    let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+
+    let emitter_app = app.clone();
+
+    let emitter_title = title.clone();
+
+    let emitter_done = done.clone();
+
+    let emitter_total = total_seen.clone();
+
+    let emitter_running = running.clone();
+
+    tauri::async_runtime::spawn(async move {
+
+        while emitter_running.load(std::sync::atomic::Ordering::Relaxed) {
+
+            tokio::time::sleep(std::time::Duration::from_millis(700)).await;
+
+            let bytes = emitter_done.load(std::sync::atomic::Ordering::Relaxed);
+
+            let bytes_total = emitter_total.load(std::sync::atomic::Ordering::Relaxed);
+
+            eprintln!("[DL] {}: {}/{} bytes (http)", emitter_title, bytes, bytes_total);
+
+            let _ = emitter_app.emit("download-progress", DownloadProgress {
+
+                title: emitter_title.clone(),
+
+                downloaded_bytes: bytes,
+
+                total_bytes: bytes_total,
+
+                state: String::from("downloading"),
+
+            });
+
+        }
+
+    });
+
+    let dl_url = mirror_url.clone();
+
+    let dl_dest = dest.clone();
+
+    let dl_done = done.clone();
+
+    let dl_total = total_seen.clone();
+
+    let dl_running = running.clone();
+
+    let pipeline_app = app.clone();
+
+    let pipeline_title = title.clone();
+
+    let pipeline_folder = folder.clone();
+
+    tauri::async_runtime::spawn(async move {
+
+        let url = dl_url.clone();
+
+        let dest_path = dl_dest.clone();
+
+        let done_ref = dl_done.clone();
+
+        let total_ref = dl_total.clone();
+
+        let flag_ref = dl_running.clone();
+
+        let result = tokio::task::spawn_blocking(move || {
+
+            let outcome = fix_core::http_download(&url, &dest_path, &|bytes_done, bytes_total| {
+
+                done_ref.store(bytes_done, std::sync::atomic::Ordering::Relaxed);
+
+                if bytes_total > 0 {
+
+                    total_ref.store(bytes_total, std::sync::atomic::Ordering::Relaxed);
+
+                }
+
+            });
+
+            flag_ref.store(false, std::sync::atomic::Ordering::Relaxed);
+
+            outcome
+
+        })
+
+        .await
+
+        .unwrap_or_else(|error| Err(format!("join: {}", error)));
+
+        match result {
+
+            Ok(()) => {
+
+                eprintln!("[DL] {}: http download complete, extracting", pipeline_title);
+
+                let _ = pipeline_app.emit("download-progress", DownloadProgress {
+
+                    title: pipeline_title.clone(),
+
+                    downloaded_bytes: 1,
+
+                    total_bytes: 1,
+
+                    state: String::from("extracting"),
+
+                });
+
+                let extract_folder = pipeline_folder.clone();
+
+                let extract_result = tokio::task::spawn_blocking(move || extract_first_rar(&extract_folder))
+
+                    .await
+
+                    .unwrap_or_else(|error| Err(format!("join: {}", error)));
+
+                let final_state = match extract_result {
+
+                    Ok(count) => {
+
+                        eprintln!("[DL] {}: extracted {} files", pipeline_title, count);
+
+                        add_game_to_steam(&pipeline_title, &pipeline_folder);
+
+                        delete_installers(&pipeline_folder);
+
+                        String::from("ready")
+
+                    }
+
+                    Err(error) => {
+
+                        eprintln!("[DL] {}: extract FAILED: {}", pipeline_title, error);
+
+                        String::from("error")
+
+                    }
+
+                };
+
+                let _ = pipeline_app.emit("download-progress", DownloadProgress {
+
+                    title: pipeline_title.clone(),
+
+                    downloaded_bytes: 1,
+
+                    total_bytes: 1,
+
+                    state: final_state,
+
+                });
+
+            }
+
+            Err(error) => {
+
+                eprintln!("[DL] {}: http download FAILED: {}", pipeline_title, error);
+
+                let _ = pipeline_app.emit("download-progress", DownloadProgress {
+
+                    title: pipeline_title.clone(),
+
+                    downloaded_bytes: 0,
+
+                    total_bytes: 0,
+
+                    state: String::from("error"),
+
+                });
+
+            }
+
+        }
+
+    });
+
+    Ok(mirror_url)
+
+}
+
+#[tauri::command]
+
 fn install_plugin(title: String, archive_path: String) -> Result<u32, String> {
 
     let home = std::env::var("HOME").map_err(|error| format!("HOME: {}", error))?;
@@ -608,7 +820,7 @@ pub fn run() {
 
         .manage(DownloadEngine { session })
 
-        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, lane_parts, open_download_window, start_torrent_download, cancel_all_downloads, launch_game, install_plugin])
+        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, launch_game, install_plugin])
 
         .run(tauri::generate_context!())
 
