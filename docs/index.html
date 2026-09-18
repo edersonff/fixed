@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIXED — every game, ready to play</title>
+<meta name="description" content="FIXED is a desktop client for online-fix.me: browse, download, extract, add to Steam and play. Zero setup, minimal clicks.">
+<style>
+:root { color-scheme: dark; --bg:#090C10; --surface:#121820; --elevated:#19212B; --line:rgba(213,225,237,.12); --text:#F2F5F7; --muted:#9AA6B5; --lime:#C6FF4A; }
+* { box-sizing:border-box; margin:0; }
+body { background:radial-gradient(circle at 76% 8%, rgba(198,255,74,.06), transparent 30%), var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; font-size:15px; line-height:1.6; }
+a { color:inherit; text-decoration:none; }
+.wrap { max-width:1080px; margin:0 auto; padding:0 24px; }
+header.nav { display:flex; align-items:center; justify-content:space-between; padding:22px 0; }
+.brand { font-weight:850; letter-spacing:.22em; font-size:15px; }
+.brand em { color:var(--lime); font-style:normal; }
+.gh { display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border:1px solid var(--line); border-radius:10px; color:var(--muted); font-size:13px; font-weight:700; transition:.15s; }
+.gh:hover { color:var(--text); border-color:rgba(213,225,237,.3); }
+.hero { padding:64px 0 40px; text-align:center; }
+.eyebrow { color:var(--lime); font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+h1 { font-size:clamp(36px,6vw,58px); font-weight:850; letter-spacing:-.05em; line-height:1.02; margin:14px 0 16px; }
+.sub { max-width:640px; margin:0 auto; color:var(--muted); font-size:16px; }
+.ctas { display:flex; gap:12px; justify-content:center; margin-top:28px; flex-wrap:wrap; }
+.btn { display:inline-flex; align-items:center; gap:9px; height:46px; padding:0 24px; border-radius:11px; font-weight:800; font-size:14px; cursor:pointer; transition:.15s; }
+.btn.primary { background:var(--lime); color:#0B1007; }
+.btn.primary:hover { background:#D8FF85; transform:translateY(-2px); box-shadow:0 10px 28px rgba(198,255,74,.22); }
+.btn.ghost { border:1px solid var(--line); color:var(--text); }
+.btn.ghost:hover { border-color:rgba(198,255,74,.45); transform:translateY(-2px); }
+.shots { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin:48px 0 8px; }
+.shot { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface); }
+.shot img { display:block; width:100%; }
+.shot figcaption { padding:12px 14px; color:var(--muted); font-size:12px; font-weight:600; }
+section { padding:40px 0; }
+h2 { font-size:26px; font-weight:850; letter-spacing:-.03em; margin-bottom:8px; }
+h2 + p { color:var(--muted); margin-bottom:24px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; }
+.feat { padding:18px; border:1px solid var(--line); border-radius:13px; background:var(--surface); }
+.feat h3 { font-size:15px; font-weight:800; margin-bottom:6px; }
+.feat h3 span { color:var(--lime); margin-right:8px; }
+.feat p { color:var(--muted); font-size:13px; }
+.steps { counter-reset:step; display:grid; gap:10px; max-width:640px; }
+.step { display:flex; gap:14px; align-items:baseline; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+.step::before { counter-increment:step; content:counter(step); color:var(--lime); font-weight:850; font-size:18px; }
+.step p { color:var(--muted); font-size:14px; }
+.step p b { color:var(--text); }
+footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="nav">
+<a class="brand" href="#">FI<em>X</em>ED</a>
+<a class="gh" href="https://github.com/edersonff/fixed">GitHub</a>
+</header>
+
+<section class="hero">
+<p class="eyebrow">Desktop client</p>
+<h1>Every game,<br>ready to play</h1>
+<p class="sub">Browse online-fix.me, download with one click, and FIXED handles the rest: extraction, Steam shortcut and a Play button. Zero setup, minimal clicks.</p>
+<div class="ctas">
+<a class="btn primary" href="https://github.com/edersonff/fixed/releases">Download</a>
+<a class="btn ghost" href="https://github.com/edersonff/fixed">Source code</a>
+</div>
+</section>
+
+<figure class="shot"><img src="screenshots/home.png" alt="FIXED home with catalog, hero banner and game rails"><figcaption>Home · live catalog with trending and recently added</figcaption></figure>
+
+<div class="shots">
+<figure class="shot"><img src="screenshots/detail.png" alt="Game detail with banner, download lanes and video review"><figcaption>Game detail · lanes, ISP warning, video review</figcaption></figure>
+<figure class="shot"><img src="screenshots/video-review.png" alt="Video review card"><figcaption>Video review straight from the game page</figcaption></figure>
+<figure class="shot"><img src="screenshots/downloads-ready.png" alt="Downloads queue ready to play"><figcaption>Downloads · progress, Play and plugin install</figcaption></figure>
+</div>
+
+<section>
+<h2>One pipeline, end to end</h2>
+<p>Every step automated. You click Download once.</p>
+<div class="steps">
+<div class="step"><p><b>Download</b> · torrent lane with live progress, mirrors available as manual fallback</p></div>
+<div class="step"><p><b>Extract</b> · password handled automatically, installers cleaned up after</p></div>
+<div class="step"><p><b>Steam</b> · non-Steam shortcut with Proton launch options, idempotent</p></div>
+<div class="step"><p><b>Play</b> · one click launches the game through Steam</p></div>
+<div class="step"><p><b>Plugins</b> · drop a BepInEx zip, Fix Repair reapplied on top automatically</p></div>
+</div>
+</section>
+
+<section>
+<h2>Built for zero friction</h2>
+<div class="grid">
+<div class="feat"><h3><span>01</span>Live catalog</h3><p>Real data from online-fix.me with client-side instant search.</p></div>
+<div class="feat"><h3><span>02</span>Choice of lane</h3><p>Torrent is opt-in per download. ISPs watching P2P? Pick mirrors manually.</p></div>
+<div class="feat"><h3><span>03</span>rar password</h3><p>Handled. Archives expand and self-clean.</p></div>
+<div class="feat"><h3><span>04</span>Steam native</h3><p>Shortcuts land in your library with the right launch options for Proton.</p></div>
+<div class="feat"><h3><span>05</span>Plugin aware</h3><p>BepInEx zips install in one click, Fix Repair applied after to keep versions sane.</p></div>
+<div class="feat"><h3><span>06</span>Cross platform</h3><p>Tauri v2 + Rust core. Linux and Windows builds via CI.</p></div>
+</div>
+</section>
+
+<footer>
+<span>FIXED v0.1 · community client, not affiliated with online-fix.me</span>
+<span><a href="https://github.com/edersonff/fixed/releases">Releases</a> · <a href="https://github.com/edersonff/fixed">GitHub</a></span>
+</footer>
+</div>
+</body>
+</html>
