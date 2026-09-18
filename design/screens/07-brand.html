@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1280, height=800, initial-scale=1">
+  <title>FIXED — Brand system</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #090C10;
+      --surface: #121820;
+      --elevated: #19212B;
+      --line: rgba(213,225,237,.12);
+      --text: #F2F5F7;
+      --muted: #9AA6B5;
+      --lime: #C6FF4A;
+      --ink: #0B1007;
+      --size-display: 42px;
+      --size-body: 14px;
+      --size-meta: 11px;
+      --dur-micro: 100ms;
+      --dur-short: 200ms;
+      --dur-med: 300ms;
+      --dur-long: 500ms;
+      --ease-standard: cubic-bezier(.2,0,0,1);
+      --ease-decel: cubic-bezier(.05,.7,.1,1);
+      --ease-accel: cubic-bezier(.3,0,.8,.15);
+      --ease-pop: cubic-bezier(.2,1.6,.4,1);
+      --delay-1: 0ms;
+      --delay-2: 50ms;
+      --delay-3: 100ms;
+      --delay-4: 150ms;
+      --delay-5: 200ms;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 1280px; height: 800px; margin: 0; background: var(--bg); color: var(--text); }
+    body { overflow: hidden; font-size: var(--size-body); }
+    a { color: inherit; text-decoration: none; }
+    :focus { outline: 0; }
+    :focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; animation: focus-in var(--dur-micro) var(--ease-standard) both; }
+    .sheet { width: 100%; height: 100%; padding: 24px 30px 20px; overflow: hidden; background: radial-gradient(circle at 70% 18%, rgba(198,255,74,.05), transparent 29%), var(--bg); }
+    .sheet-head { display: flex; align-items: end; justify-content: space-between; height: 82px; animation: fade-rise var(--dur-med) var(--ease-decel) var(--delay-1) both; }
+    .brand { color: var(--text); font-size: var(--size-body); font-weight: 850; letter-spacing: .22em; line-height: 1; }
+    .brand .x { color: var(--lime); }
+    h1, h2, p { margin: 0; }
+    h1 { margin-top: 12px; font-size: var(--size-display); line-height: .95; letter-spacing: -.06em; }
+    .version { color: var(--muted); font-size: var(--size-meta); }
+    .brand-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+    .brand-card, .token-card, .radius-card { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); animation: fade-rise var(--dur-med) var(--ease-decel) var(--card-delay) both; }
+    .brand-card:nth-child(1) { --card-delay: var(--delay-1); }.brand-card:nth-child(2) { --card-delay: var(--delay-2); }.brand-card:nth-child(3) { --card-delay: var(--delay-3); }
+    .swatches { display: grid; grid-template-columns: 1fr 1fr; }
+    .swatch { display: flex; flex-direction: column; justify-content: space-between; height: 112px; padding: 13px 17px; }
+    .swatch.dark { background: #090C10; }
+    .swatch.light { background: #F2F5F7; color: var(--ink); }
+    .swatch-label { color: var(--muted); font-size: var(--size-meta); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .swatch.light .swatch-label { color: #637080; }
+    .swatch.light .brand { color: var(--ink); }
+    .swatch.light .brand .x { color: #628A00; }
+    .wordmark { font-size: var(--size-display); font-weight: 900; letter-spacing: -.10em; line-height: .8; }
+    .wordmark.spacewar { letter-spacing: -.08em; }
+    .brand-meta { min-height: 54px; padding: 12px 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--size-meta); }
+    .brand-meta strong { color: var(--text); font-weight: 750; }
+    .system-grid { display: grid; grid-template-columns: 1.18fr .82fr; gap: 14px; margin-top: 14px; }
+    .token-card, .radius-card { min-height: 186px; padding: 15px 17px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+    .card-head h2 { font-size: var(--size-body); font-weight: 800; }
+    .card-head span { color: var(--muted); font-size: var(--size-meta); }
+    .token-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .token { overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--elevated); transition: transform var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard); }
+    .token:hover { border-color: rgba(198,255,74,.50); transform: translateY(-3px); }
+    .token-color { height: 62px; }
+    .token-color.canvas { background: #090C10; }.token-color.surface { background: #121820; }.token-color.elevated { background: #19212B; }.token-color.text { background: #F2F5F7; }.token-color.primary { background: #C6FF4A; }
+    .token-name { display: grid; gap: 3px; padding: 8px; color: var(--muted); font-size: var(--size-meta); }
+    .token-name strong { color: var(--text); font-weight: 750; }
+    .radius-demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+    .radius-swatch { display: grid; height: 84px; place-items: center; border: 1px solid var(--lime); background: rgba(198,255,74,.12); color: var(--lime); font-size: var(--size-meta); font-weight: 800; transition: transform var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
+    .radius-swatch:hover { background: rgba(198,255,74,.22); transform: translateY(-3px); }
+    .radius-swatch.small { border-radius: 8px; }.radius-swatch.medium { border-radius: 16px; }.radius-swatch.large { border-radius: 28px; }
+    .radius-labels { display: flex; justify-content: space-between; margin-top: 10px; color: var(--muted); font-size: var(--size-meta); }
+    .promise { display: flex; align-items: center; justify-content: space-between; min-height: 58px; margin-top: 14px; padding: 0 17px; border: 1px solid rgba(198,255,74,.35); border-radius: 11px; background: rgba(198,255,74,.07); animation: fade-rise var(--dur-med) var(--ease-decel) var(--delay-4) both; }
+    .promise strong { color: var(--lime); font-size: var(--size-body); }
+    .promise span { color: var(--muted); font-size: var(--size-meta); }
+    @keyframes fade-rise { from { opacity: 0; filter: blur(8px); transform: translateY(10px); } to { opacity: 1; filter: blur(0); transform: translateY(0); } }
+    @keyframes focus-in { from { outline-color: transparent; } to { outline-color: var(--lime); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="sheet"><header class="sheet-head"><div><a class="brand" href="01-home.html" aria-label="FIXED">FI<span class="x">X</span>ED</a><h1>Ready looks like FIXED.</h1></div><span class="version">Dark + light / 07</span></header><section class="brand-grid" aria-label="Wordmark family"><article class="brand-card"><div class="swatches"><div class="swatch dark"><span class="swatch-label">Dark / primary</span><div class="wordmark brand">FI<span class="x">X</span>ED</div></div><div class="swatch light"><span class="swatch-label">Light / inverse</span><div class="wordmark brand">FI<span class="x">X</span>ED</div></div></div><div class="brand-meta"><strong>FIXED</strong> · the repair point is the lime X.</div></article><article class="brand-card"><div class="swatches"><div class="swatch dark"><span class="swatch-label">Dark / primary</span><div class="wordmark">Fixbox</div></div><div class="swatch light"><span class="swatch-label">Light / inverse</span><div class="wordmark">Fixbox</div></div></div><div class="brand-meta"><strong>Fixbox</strong> · the friendly container mark.</div></article><article class="brand-card"><div class="swatches"><div class="swatch dark"><span class="swatch-label">Dark / primary</span><div class="wordmark spacewar">Spacewar</div></div><div class="swatch light"><span class="swatch-label">Light / inverse</span><div class="wordmark spacewar">Spacewar</div></div></div><div class="brand-meta"><strong>Spacewar</strong> · runs as appid 228980.</div></article></section><section class="system-grid"><article class="token-card"><div class="card-head"><h2>Color tokens</h2><span>one accent / five surfaces</span></div><div class="token-grid"><div class="token"><div class="token-color canvas"></div><div class="token-name"><strong>Canvas</strong><span>#090C10</span></div></div><div class="token"><div class="token-color surface"></div><div class="token-name"><strong>Surface</strong><span>#121820</span></div></div><div class="token"><div class="token-color elevated"></div><div class="token-name"><strong>Elevated</strong><span>#19212B</span></div></div><div class="token"><div class="token-color text"></div><div class="token-name"><strong>Text</strong><span>#F2F5F7</span></div></div><div class="token"><div class="token-color primary"></div><div class="token-name"><strong>Primary</strong><span>#C6FF4A</span></div></div></div></article><article class="radius-card"><div class="card-head"><h2>Radius language</h2><span>corners carry hierarchy</span></div><div class="radius-demo"><div class="radius-swatch small">8</div><div class="radius-swatch medium">16</div><div class="radius-swatch large">28</div></div><div class="radius-labels"><span>Controls</span><span>Cards</span><span>Feature</span></div></article></section><div class="promise"><strong>FIXED / every game, ready to play.</strong><span>Utility first · contrast carries the mood · lime carries the action</span></div></main>
+</body>
+</html>
