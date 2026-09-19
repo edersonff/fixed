@@ -6,10 +6,15 @@ mod commands;
 mod helpers;
 mod lane;
 mod launch;
+mod launch_progress;
 mod library;
 mod pipeline_http;
+mod steam_client;
 mod pipeline_torrent;
 mod state;
+
+#[cfg(test)]
+mod test_support;
 
 pub use commands::*;
 pub use helpers::*;
@@ -61,9 +66,9 @@ pub fn run() {
 
         .plugin(tauri_plugin_dialog::init())
 
-        .manage(DownloadEngine { session, cancels: std::sync::Mutex::new(std::collections::HashMap::new()) })
+        .manage(DownloadEngine { session, cancels: std::sync::Mutex::new(std::collections::HashMap::new()), torrents: std::sync::Mutex::new(std::collections::HashMap::new()) })
 
-        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder])
+        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game])
 
         .run(tauri::generate_context!())
 

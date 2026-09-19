@@ -24,5 +24,21 @@ pub struct DownloadEngine {
 
     pub cancels: std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>>,
 
+    pub torrents: std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<librqbit::ManagedTorrent>>>,
+
+}
+
+#[derive(serde::Serialize, Clone)]
+
+#[serde(rename_all = "camelCase")]
+
+pub struct LaunchProgress {
+
+    pub title: String,
+
+    pub phase: String,
+
+    pub detail: String,
+
 }
 

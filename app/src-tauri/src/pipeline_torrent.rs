@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use librqbit::AddTorrent;
 use librqbit::AddTorrentOptions;
+use librqbit::TorrentStatsState;
 
 use crate::DownloadEngine;
 use crate::DownloadProgress;
@@ -9,6 +10,7 @@ use crate::delete_installers;
 use crate::extract_first_rar;
 use crate::log_fail;
 use tauri::Emitter;
+use tauri::Manager;
 
 #[tauri::command]
 pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<'_, DownloadEngine>, title: String, lane_url: String) -> Result<String, String> {
@@ -22,6 +24,26 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
         .map_err(|error| log_fail(&title, "torrent fetch", error))?;
 
     let safe_title = title.replace('/', "_");
+
+    if let Ok(active) = engine.torrents.lock() {
+
+        if active.contains_key(&safe_title) {
+
+            return Err(log_fail(&title, "duplicate", String::from("already downloading")));
+
+        }
+
+    }
+
+    if let Ok(active) = engine.cancels.lock() {
+
+        if active.contains_key(&safe_title) {
+
+            return Err(log_fail(&title, "duplicate", String::from("already downloading via http lane")));
+
+        }
+
+    }
 
     let folder = crate::game_folder(&safe_title)
 
@@ -53,7 +75,15 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
         .ok_or_else(|| log_fail(&title, "into handle", String::from("no handle returned")))?;
 
+    if let Ok(mut active) = engine.torrents.lock() {
+
+        active.insert(safe_title.clone(), handle.clone());
+
+    }
+
     let emit_title = title.clone();
+
+    let emit_safe_title = safe_title.clone();
 
     let cancel_token = session.cancellation_token().clone();
 
@@ -77,6 +107,36 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
             let stats = handle.stats();
 
+            if matches!(stats.state, TorrentStatsState::Paused) {
+
+                eprintln!("[DL] {}: paused by user, emitter stopped", emit_title);
+
+                let _ = app.emit("download-progress", DownloadProgress {
+
+                    title: emit_title.clone(),
+
+                    downloaded_bytes: stats.progress_bytes,
+
+                    total_bytes: stats.total_bytes,
+
+                    state: String::from("stopped"),
+
+                });
+
+                if let Some(engine_state) = app.try_state::<DownloadEngine>() {
+
+                    if let Ok(mut active) = engine_state.torrents.lock() {
+
+                        active.remove(&emit_safe_title);
+
+                    }
+
+                }
+
+                break;
+
+            }
+
             eprintln!("[DL] {}: {}/{} bytes", emit_title, stats.progress_bytes, stats.total_bytes);
 
             let _ = app.emit("download-progress", DownloadProgress {
@@ -91,7 +151,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
             });
 
-            if stats.total_bytes > 0 && stats.progress_bytes >= stats.total_bytes {
+            if stats.finished || (stats.total_bytes > 0 && stats.progress_bytes >= stats.total_bytes) {
 
                 eprintln!("[DL] {}: download complete, extracting", emit_title);
 
@@ -112,6 +172,16 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
                 let extract_folder = game_folder.clone();
 
                 let extract_app = app.clone();
+
+                if let Some(engine_state) = app.try_state::<DownloadEngine>() {
+
+                    if let Ok(mut active) = engine_state.torrents.lock() {
+
+                        active.remove(&emit_safe_title);
+
+                    }
+
+                }
 
                 tauri::async_runtime::spawn(async move {
 

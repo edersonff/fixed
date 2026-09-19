@@ -63,13 +63,35 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
     let engine = app.state::<DownloadEngine>();
 
-    engine.cancels
+    {
 
-        .lock()
+        let mut cancels = engine
 
-        .map_err(|error| log_fail(&title, "cancel registry", error.to_string()))?
+            .cancels
 
-        .insert(safe_title.clone(), cancel_flag.clone());
+            .lock()
+
+            .map_err(|error| log_fail(&title, "cancel registry", error.to_string()))?;
+
+        if cancels.contains_key(&safe_title) {
+
+            return Err(log_fail(&title, "duplicate", String::from("already downloading")));
+
+        }
+
+        if let Ok(active) = engine.torrents.lock() {
+
+            if active.contains_key(&safe_title) {
+
+                return Err(log_fail(&title, "duplicate", String::from("already downloading via torrent lane")));
+
+            }
+
+        }
+
+        cancels.insert(safe_title.clone(), cancel_flag.clone());
+
+    }
 
     let done = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
 
