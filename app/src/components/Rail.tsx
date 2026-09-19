@@ -1,0 +1,105 @@
+import { AnimatePresence, motion } from "framer-motion";
+
+import { ChevronRight } from "lucide-react";
+
+import type { GameEntry } from "../types";
+
+import { GameCard } from "./GameCard";
+
+export function Rail({
+
+  title,
+
+  games,
+
+  onSelect,
+
+  onQuickDownload,
+
+  quickBusy,
+
+  onSeeAll,
+
+}: {
+
+  title: string;
+
+  games: GameEntry[];
+
+  onSelect: (game: GameEntry) => void;
+
+  onQuickDownload: (game: GameEntry) => void;
+
+  quickBusy: boolean;
+
+  onSeeAll: () => void;
+
+}) {
+
+  if (games.length === 0) {
+
+    return null;
+
+  }
+
+  return (
+
+    <section className="rail-block">
+
+      <header className="rail-head">
+
+        <h2>{title}</h2>
+
+        <motion.button
+
+          type="button"
+
+          className="seeall"
+
+          whileHover={{ y: -2 }}
+
+          whileTap={{ scale: 0.97 }}
+
+          onClick={onSeeAll}
+
+        >
+
+          See all <ChevronRight size={14} strokeWidth={2} />
+
+        </motion.button>
+
+      </header>
+
+      <div className="rail">
+
+        <AnimatePresence mode="popLayout">
+
+          {games.map((game, index) => (
+
+          <GameCard
+
+            game={game}
+
+            index={index}
+
+            onSelect={onSelect}
+
+            onQuickDownload={onQuickDownload}
+
+            quickBusy={quickBusy}
+
+            key={game.pageUrl}
+
+          />
+
+          ))}
+
+        </AnimatePresence>
+
+      </div>
+
+    </section>
+
+  );
+
+}

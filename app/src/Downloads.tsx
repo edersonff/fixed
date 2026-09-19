@@ -146,7 +146,7 @@ function EntryCard({ entry, index, onCancel }: { entry: DownloadEntry; index: nu
 
                 ? `${entry.parts.length} File${entry.parts.length === 1 ? "" : "s"} Found. Manual Lane`
 
-                : "Could Not Resolve This Lane";
+                : (entry.errorMsg ?? "Could Not Resolve This Lane");
 
   return (
 
@@ -212,7 +212,7 @@ function EntryCard({ entry, index, onCancel }: { entry: DownloadEntry; index: nu
 
           <motion.p
 
-            key={`${entry.state}-${status}`}
+            key={entry.state}
 
             className={entry.state === "extracting" ? "status-shimmer" : undefined}
 

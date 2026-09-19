@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { invoke } from "@tauri-apps/api/core";
 
 import { ArrowLeft } from "lucide-react";
 
@@ -17,6 +19,10 @@ import { Play } from "lucide-react";
 import { Wrench } from "lucide-react";
 
 import { motion, type Variants } from "framer-motion";
+
+import type { DownloadLane } from "./types";
+
+import type { GameAssets } from "./types";
 
 import type { GameDetail } from "./types";
 
@@ -178,6 +184,8 @@ export function DetailView({
 
   onDownload,
 
+  onLanePick,
+
 }: {
 
   game: GameEntry;
@@ -190,6 +198,8 @@ export function DetailView({
 
   onDownload: () => void;
 
+  onLanePick: (lane: DownloadLane) => void;
+
 }) {
 
   const published = game.publishedAt.slice(0, 10);
@@ -197,6 +207,24 @@ export function DetailView({
   const title = displayTitle(game.title);
 
   const [videoPlaying, setVideoPlaying] = useState(false);
+
+  const [assets, setAssets] = useState<GameAssets | null>(null);
+
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => {
+
+    setAssets(null);
+
+    setLogoFailed(false);
+
+    invoke<GameAssets | null>("game_assets", { title: game.title })
+
+      .then((result) => setAssets(result))
+
+      .catch(() => setAssets(null));
+
+  }, [game.title]);
 
   return (
 
@@ -232,7 +260,25 @@ export function DetailView({
 
         <div className="poster detail-art">
 
-          <img src={game.posterUrl} alt={`${title} poster`} referrerPolicy="no-referrer" />
+          <img
+
+            src={assets?.heroUrl || game.posterUrl}
+
+            alt={`${title} banner`}
+
+            referrerPolicy="no-referrer"
+
+            onError={(event) => {
+
+              if (assets?.heroUrl) {
+
+                event.currentTarget.src = game.posterUrl;
+
+              }
+
+            }}
+
+          />
 
           {busy && (
 
@@ -256,7 +302,27 @@ export function DetailView({
 
           <p className="eyebrow">Game Detail</p>
 
-          <h1 id="detail-title">{title}</h1>
+          {assets?.logoUrl && !logoFailed ? (
+
+            <img
+
+              className="detail-logo"
+
+              src={assets.logoUrl}
+
+              alt={title}
+
+              referrerPolicy="no-referrer"
+
+              onError={() => setLogoFailed(true)}
+
+            />
+
+          ) : (
+
+            <h1 id="detail-title">{title}</h1>
+
+          )}
 
           <div className="meta">
 
@@ -326,7 +392,9 @@ export function DetailView({
 
             {detail.lanes.map((lane, index) => (
 
-              <motion.div
+              <motion.button
+
+                type="button"
 
                 key={lane.kind}
 
@@ -339,6 +407,12 @@ export function DetailView({
                 animate="visible"
 
                 custom={index}
+
+                whileHover={{ y: -2 }}
+
+                whileTap={{ scale: 0.99 }}
+
+                onClick={() => onLanePick(lane)}
 
               >
 
@@ -356,7 +430,7 @@ export function DetailView({
 
                 )}
 
-              </motion.div>
+              </motion.button>
 
             ))}
 

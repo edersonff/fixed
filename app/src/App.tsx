@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { CSSProperties } from "react";
-
 import { invoke } from "@tauri-apps/api/core";
+
+import { getVersion } from "@tauri-apps/api/app";
 
 import { listen } from "@tauri-apps/api/event";
 
-import { AnimatePresence, MotionConfig, motion, type Variants } from "framer-motion";
-
-import { ChevronRight } from "lucide-react";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 
 import { Download } from "lucide-react";
 
@@ -16,11 +14,29 @@ import { Home } from "lucide-react";
 
 import { LibraryBig } from "lucide-react";
 
-import { Puzzle } from "lucide-react";
-
 import { Search } from "lucide-react";
 
 import { DetailView } from "./Detail";
+
+import { DefenderModal, shouldShowDefenderModal } from "./components/DefenderModal";
+
+import { GameCard } from "./components/GameCard";
+
+import { Rail } from "./components/Rail";
+
+import { EmptyState } from "./components/EmptyState";
+
+import { displayTitle } from "./lib/format";
+
+import { formatDate } from "./lib/format";
+
+import { prettyCategory } from "./lib/format";
+
+import { heroVariants } from "./lib/motion";
+
+import { viewVariants } from "./lib/motion";
+
+import { fadeRiseVariants } from "./lib/motion";
 
 import { DownloadsView } from "./Downloads";
 
@@ -34,107 +50,15 @@ import type { GameDetail } from "./types";
 
 import type { GameEntry } from "./types";
 
+import type { GameAssets } from "./types";
+
+import type { DownloadLane } from "./types";
+
 import type { GamesPage } from "./types";
 
 import type { View } from "./types";
 
 import "./App.css";
-
-const EASE_DECEL = [0.05, 0.7, 0.1, 1] as const;
-
-const fadeRiseVariants: Variants = {
-
-  hidden: { opacity: 0, filter: "blur(8px)", y: 10 },
-
-  visible: (index = 0) => ({
-
-    opacity: 1,
-
-    filter: "blur(0px)",
-
-    y: 0,
-
-    transition: { duration: 0.3, delay: index * 0.04, ease: EASE_DECEL },
-
-  }),
-
-  exit: {
-
-    opacity: 0,
-
-    filter: "blur(8px)",
-
-    y: 10,
-
-    transition: { duration: 0.15, ease: EASE_DECEL },
-
-  },
-
-};
-
-const heroVariants: Variants = {
-
-  ...fadeRiseVariants,
-
-  visible: (index = 0) => ({
-
-    opacity: 1,
-
-    filter: "blur(0px)",
-
-    y: 0,
-
-    transition: { duration: 0.3, delay: index * 0.06, ease: EASE_DECEL },
-
-  }),
-
-};
-
-const viewVariants: Variants = {
-
-  hidden: { opacity: 0, filter: "blur(6px)", scale: 0.995, y: 4 },
-
-  visible: (mode = "view") => ({
-
-    opacity: 1,
-
-    filter: "blur(0px)",
-
-    scale: 1,
-
-    y: 0,
-
-    transition: {
-
-      duration: mode === "detail" ? 0.24 : 0.2,
-
-      ease: EASE_DECEL,
-
-    },
-
-  }),
-
-  exit: (mode = "view") => ({
-
-    opacity: 0,
-
-    filter: mode === "detail" ? "blur(8px)" : "blur(0px)",
-
-    scale: 0.995,
-
-    y: mode === "detail" ? 10 : 0,
-
-    transition: {
-
-      duration: mode === "detail" ? 0.15 : 0.2,
-
-      ease: EASE_DECEL,
-
-    },
-
-  }),
-
-};
 
 const NAV: Array<{ id: View; label: string; Icon: typeof Home }> = [
 
@@ -145,58 +69,6 @@ const NAV: Array<{ id: View; label: string; Icon: typeof Home }> = [
   { id: "downloads", label: "Downloads", Icon: Download },
 
 ];
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function formatDate(iso: string): string {
-
-  const date = new Date(iso);
-
-  if (Number.isNaN(date.getTime())) {
-
-    return iso.slice(0, 10);
-
-  }
-
-  return `${String(date.getDate()).padStart(2, "0")} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
-
-}
-
-function prettyCategory(raw: string): string {
-
-  return raw
-
-    .replace("officialservers", "official servers")
-
-    .replace(/(^|[- ])([a-z])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
-
-}
-
-function displayTitle(raw: string): string {
-
-  return raw
-
-    .trim()
-
-    .split(/\s+/)
-
-    .map((word) => {
-
-      if (/^(?:[A-Za-z]\.){2,}[A-Za-z]?/.test(word)) {
-
-        return word;
-
-      }
-
-      const normalized = word.toLocaleLowerCase();
-
-      return normalized.replace(/^[a-zà-ÿ]/i, (letter) => letter.toLocaleUpperCase());
-
-    })
-
-    .join(" ");
-
-}
 
 function Wordmark() {
 
@@ -239,282 +111,6 @@ function LoadingDots({ label = "Loading" }: { label?: string }) {
       </span>
 
     </span>
-
-  );
-
-}
-
-function GameCard({
-
-  game,
-
-  index,
-
-  onSelect,
-
-  onQuickDownload,
-
-  quickBusy,
-
-}: {
-
-  game: GameEntry;
-
-  index: number;
-
-  onSelect: (game: GameEntry) => void;
-
-  onQuickDownload: (game: GameEntry) => void;
-
-  quickBusy: boolean;
-
-}) {
-
-  const cropPositions = ["center 30%", "center 22%", "center 36%", "left 32%", "right 28%"];
-
-  const posterStyle = {
-
-    "--poster-position": cropPositions[game.title.length % cropPositions.length],
-
-    "--poster-scale": "1.03",
-
-    "--poster-hover-scale": "1.09",
-
-  } as CSSProperties;
-
-  return (
-
-    <motion.article
-
-      className="card"
-
-      variants={fadeRiseVariants}
-
-      initial="hidden"
-
-      animate="visible"
-
-      exit="exit"
-
-      custom={index}
-
-      role="button"
-
-      tabIndex={0}
-
-      aria-label={`Open ${displayTitle(game.title)}`}
-
-      onClick={() => onSelect(game)}
-
-      onKeyDown={(event: React.KeyboardEvent) => {
-
-        if (event.key === "Enter" || event.key === " ") {
-
-          event.preventDefault();
-
-          onSelect(game);
-
-        }
-
-      }}
-
-    >
-
-      <div className="poster" style={posterStyle}>
-
-        <img src={game.posterUrl} alt={`${game.title} poster`} loading="lazy" referrerPolicy="no-referrer" />
-
-        <div className="poster-overlay">
-
-          <motion.button
-
-            type="button"
-
-            className="quick-dl"
-
-            whileHover={{ y: -2 }}
-
-            whileTap={{ scale: 0.97 }}
-
-            disabled={quickBusy}
-
-            onClick={(event: React.MouseEvent) => {
-
-              event.stopPropagation();
-
-              onQuickDownload(game);
-
-            }}
-
-          >
-
-            <Download size={14} strokeWidth={2.4} />
-
-            Get
-
-          </motion.button>
-
-        </div>
-
-      </div>
-
-      <div className="copy">
-
-        <h2>{displayTitle(game.title)}</h2>
-
-        <p className="meta">
-
-          <span>{prettyCategory(game.category)}</span>
-
-          <span>{formatDate(game.publishedAt)}</span>
-
-        </p>
-
-      </div>
-
-    </motion.article>
-
-  );
-
-}
-
-function EmptyState({ title, hint, action, onAction }: { title: string; hint: string; action: string; onAction: () => void }) {
-
-  return (
-
-    <div className="empty">
-
-      <motion.div
-
-        className="empty-icon"
-
-        animate={{ y: [0, -4, 0] }}
-
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-
-      >
-
-        <Puzzle size={28} strokeWidth={1.5} />
-
-      </motion.div>
-
-      <motion.h2 variants={fadeRiseVariants} initial="hidden" animate="visible" custom={0}>
-
-        {title}
-
-      </motion.h2>
-
-      <motion.p variants={fadeRiseVariants} initial="hidden" animate="visible" custom={1}>
-
-        {hint}
-
-      </motion.p>
-
-      <motion.button type="button" whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} onClick={onAction}>
-
-        {action}
-
-      </motion.button>
-
-    </div>
-
-  );
-
-}
-
-function Rail({
-
-  title,
-
-  games,
-
-  onSelect,
-
-  onQuickDownload,
-
-  quickBusy,
-
-  onSeeAll,
-
-}: {
-
-  title: string;
-
-  games: GameEntry[];
-
-  onSelect: (game: GameEntry) => void;
-
-  onQuickDownload: (game: GameEntry) => void;
-
-  quickBusy: boolean;
-
-  onSeeAll: () => void;
-
-}) {
-
-  if (games.length === 0) {
-
-    return null;
-
-  }
-
-  return (
-
-    <section className="rail-block">
-
-      <header className="rail-head">
-
-        <h2>{title}</h2>
-
-        <motion.button
-
-          type="button"
-
-          className="seeall"
-
-          whileHover={{ y: -2 }}
-
-          whileTap={{ scale: 0.97 }}
-
-          onClick={onSeeAll}
-
-        >
-
-          See all <ChevronRight size={14} strokeWidth={2} />
-
-        </motion.button>
-
-      </header>
-
-      <div className="rail">
-
-        <AnimatePresence mode="popLayout">
-
-          {games.map((game, index) => (
-
-          <GameCard
-
-            game={game}
-
-            index={index}
-
-            onSelect={onSelect}
-
-            onQuickDownload={onQuickDownload}
-
-            quickBusy={quickBusy}
-
-            key={game.pageUrl}
-
-          />
-
-          ))}
-
-        </AnimatePresence>
-
-      </div>
-
-    </section>
 
   );
 
@@ -636,7 +232,6 @@ export default function App() {
 
   );
 
-
   useEffect(() => {
 
     if (!searchTerm || busy || source !== "live") {
@@ -674,6 +269,54 @@ export default function App() {
   const featured = trending[0] ?? null;
 
   const trendingRest = featured ? trending.slice(1) : trending;
+
+  const [appVersion, setAppVersion] = useState("");
+
+  const [showDefender, setShowDefender] = useState(false);
+
+  useEffect(() => {
+
+    if (shouldShowDefenderModal()) {
+
+      setShowDefender(true);
+
+    }
+
+  }, []);
+
+  const [featuredAssets, setFeaturedAssets] = useState<GameAssets | null>(null);
+
+  const [featuredLogoFailed, setFeaturedLogoFailed] = useState(false);
+
+  useEffect(() => {
+
+    getVersion()
+
+      .then((version) => setAppVersion(version))
+
+      .catch(() => setAppVersion(""));
+
+  }, []);
+
+  useEffect(() => {
+
+    setFeaturedAssets(null);
+
+    setFeaturedLogoFailed(false);
+
+    if (!featured) {
+
+      return;
+
+    }
+
+    invoke<GameAssets | null>("game_assets", { title: featured.title })
+
+      .then((result) => setFeaturedAssets(result))
+
+      .catch(() => setFeaturedAssets(null));
+
+  }, [featured?.title]);
 
   function mergeGames(previous: GameEntry[], incoming: GameEntry[]) {
 
@@ -769,7 +412,11 @@ export default function App() {
 
           previous.map((entry) =>
 
-            entry.game.pageUrl === game.pageUrl ? { ...entry, state: "error" } : entry,
+            entry.game.pageUrl === game.pageUrl
+
+              ? { ...entry, state: "error", errorMsg: String(reason).slice(0, 140) }
+
+              : entry,
 
           ),
 
@@ -779,7 +426,7 @@ export default function App() {
 
   }
 
-  function startHttp(game: GameEntry, hostersUrl: string) {
+  function startHttp(game: GameEntry, hostersUrl: string, gameDetail: GameDetail | null) {
 
     const safeTitle = game.title.replace(/\//g, "_");
 
@@ -801,11 +448,23 @@ export default function App() {
 
         console.error("start_http_download failed:", reason);
 
+        if (gameDetail) {
+
+          startTorrent(game, gameDetail);
+
+          return;
+
+        }
+
         setDownloads((previous) =>
 
           previous.map((entry) =>
 
-            entry.game.pageUrl === game.pageUrl ? { ...entry, state: "error" } : entry,
+            entry.game.pageUrl === game.pageUrl
+
+              ? { ...entry, state: "error", errorMsg: String(reason).slice(0, 140) }
+
+              : entry,
 
           ),
 
@@ -821,7 +480,7 @@ export default function App() {
 
     if (hostersLane) {
 
-      startHttp(game, hostersLane.url);
+      startHttp(game, hostersLane.url, gameDetail);
 
       return;
 
@@ -850,6 +509,34 @@ export default function App() {
       .catch((reason: unknown) => console.error("quick download failed:", reason))
 
       .finally(() => setQuickBusy(false));
+
+  }
+
+  function pickLane(lane: DownloadLane) {
+
+    if (!selected) {
+
+      return;
+
+    }
+
+    if (lane.kind === "hosters") {
+
+      startHttp(selected, lane.url, detail);
+
+      return;
+
+    }
+
+    if (lane.kind === "torrent") {
+
+      startTorrent(selected, detail ?? { title: selected.title, build: "", steamExtUrl: "", lanes: [lane], mentionsFixRepair: false });
+
+      return;
+
+    }
+
+    invoke("open_download_window", { url: lane.url }).catch((reason: unknown) => console.error(reason));
 
   }
 
@@ -943,7 +630,7 @@ export default function App() {
 
         </nav>
 
-        <span className="foot">v0.1</span>
+        <span className="foot">v{appVersion || "…"} · every game, ready to play</span>
 
       </aside>
 
@@ -982,6 +669,8 @@ export default function App() {
             onBack={() => setSelected(null)}
 
             onDownload={() => requestDownload(selected, detail)}
+
+            onLanePick={pickLane}
 
           />
 
@@ -1033,7 +722,27 @@ export default function App() {
 
               <motion.section className="hero" initial="hidden" animate="visible" variants={fadeRiseVariants}>
 
-                <img className="hero-bg" src={featured.posterUrl} alt="" referrerPolicy="no-referrer" />
+                <img
+
+                  className="hero-bg"
+
+                  src={featuredAssets?.heroUrl || featured.posterUrl}
+
+                  alt=""
+
+                  referrerPolicy="no-referrer"
+
+                  onError={(event) => {
+
+                    if (featuredAssets?.heroUrl) {
+
+                      event.currentTarget.src = featured.posterUrl;
+
+                    }
+
+                  }}
+
+                />
 
                 <div className="hero-copy">
 
@@ -1045,7 +754,27 @@ export default function App() {
 
                   <motion.h1 className="hero-title" variants={heroVariants} initial="hidden" animate="visible" custom={1}>
 
-                    {displayTitle(featured.title)}
+                    {featuredAssets?.logoUrl && !featuredLogoFailed ? (
+
+                      <img
+
+                        className="hero-logo-img"
+
+                        src={featuredAssets.logoUrl}
+
+                        alt={displayTitle(featured.title)}
+
+                        referrerPolicy="no-referrer"
+
+                        onError={() => setFeaturedLogoFailed(true)}
+
+                      />
+
+                    ) : (
+
+                      displayTitle(featured.title)
+
+                    )}
 
                   </motion.h1>
 
@@ -1257,6 +986,19 @@ export default function App() {
 
         </section>
 
+      <DefenderModal
+
+        open={showDefender}
+
+        onClose={() => {
+
+          window.localStorage.setItem("fixed-defender-seen", "1");
+
+          setShowDefender(false);
+
+        }}
+
+      />
 
       </main>
 
