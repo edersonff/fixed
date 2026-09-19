@@ -80,6 +80,66 @@ pub fn run() {
 
         .setup(|app| {
 
+            let open = tauri::menu::MenuItem::with_id(app, "open", "Open FIXED", true, None::<&str>)?;
+
+            let quit = tauri::menu::MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+            let menu = tauri::menu::Menu::with_items(app, &[&open, &quit])?;
+
+            tauri::tray::TrayIconBuilder::with_id("main")
+
+                .icon(app.default_window_icon().cloned().ok_or_else(|| String::from("no app icon"))?)
+
+                .menu(&menu)
+
+                .show_menu_on_left_click(false)
+
+                .on_menu_event(|app, event| {
+
+                    if event.id() == "open" {
+
+                        if let Some(window) = app.get_webview_window("main") {
+
+                            let _ = window.show();
+
+                            let _ = window.unminimize();
+
+                            let _ = window.set_focus();
+
+                        }
+
+                    }
+
+                    if event.id() == "quit" {
+
+                        app.exit(0);
+
+                    }
+
+                })
+
+                .on_tray_icon_event(|tray, event| {
+
+                    if let tauri::tray::TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } = event {
+
+                        let app = tray.app_handle().clone();
+
+                        if let Some(window) = app.get_webview_window("main") {
+
+                            let _ = window.show();
+
+                            let _ = window.unminimize();
+
+                            let _ = window.set_focus();
+
+                        }
+
+                    }
+
+                })
+
+                .build(app)?;
+
             let handle = app.handle().clone();
 
             std::thread::spawn(move || {
