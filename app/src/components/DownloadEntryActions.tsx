@@ -8,7 +8,7 @@ import { useGameLaunch } from "../hooks/useGameLaunch";
 
 import { usePluginInstall } from "../hooks/usePluginInstall";
 
-import { EASE_POP, DUR_SHORT, liftOnHover, pressDown } from "../lib/motion";
+import { EASE_POP, DUR_SHORT, actionHover, actionPressDown, liftOnHover, pressDown } from "../lib/motion";
 
 export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; ready: boolean }) {
 
@@ -50,9 +50,9 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
               transition={{ duration: DUR_SHORT, ease: EASE_POP }}
 
-              whileHover={liftOnHover}
+              whileHover={actionHover}
 
-              whileTap={pressDown}
+              whileTap={actionPressDown}
 
               disabled={launching}
 
@@ -60,7 +60,11 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
             >
 
-              <Play size={14} strokeWidth={2.2} />
+              <span className="action-icon">
+
+                <Play size={15} strokeWidth={2.2} />
+
+              </span>
 
               {launching ? "Starting…" : "Play"}
 
@@ -92,7 +96,15 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
       </AnimatePresence>
 
-      {launchMsg && <p className="plugin-note">{launchMsg}</p>}
+      {launchMsg && (
+
+        <p className={launchMsg.startsWith("Launch Failed") ? "launch-note launch-error" : "launch-note"}>
+
+          {launchMsg}
+
+        </p>
+
+      )}
 
       {pluginMsg && <p className="plugin-note">{pluginMsg}</p>}
 

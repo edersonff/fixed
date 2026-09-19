@@ -24,7 +24,7 @@ import { fadeRiseVariants } from "../lib/motion";
 
 import { heroArtVariants } from "../lib/motion";
 
-import { liftOnHover, pressDown } from "../lib/motion";
+import { actionHover, actionPressDown } from "../lib/motion";
 
 import { heroVariants } from "../lib/motion";
 
@@ -168,9 +168,9 @@ export function HomeHero({
 
           custom={3}
 
-          whileHover={liftOnHover}
+          whileHover={actionHover}
 
-          whileTap={pressDown}
+          whileTap={actionPressDown}
 
           disabled={installed && launching}
 
@@ -178,7 +178,11 @@ export function HomeHero({
 
         >
 
-          {installed ? <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
+          <span className="action-icon">
+
+            {installed ? <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
+
+          </span>
 
           {installed ? (launching ? "Starting" : "Play") : "Download"}
 
