@@ -48,6 +48,16 @@ export type GameDetail = {
 
 };
 
+export type GameAssets = {
+
+  appid: number;
+
+  heroUrl: string;
+
+  logoUrl: string;
+
+};
+
 export type DownloadState = "resolving" | "parts" | "error" | "torrenting" | "stopped" | "extracting" | "ready";
 
 export type DownloadEntry = {
@@ -63,6 +73,8 @@ export type DownloadEntry = {
   downloadedBytes?: number;
 
   totalBytes?: number;
+
+  errorMsg?: string;
 
 };
 
