@@ -1,4 +1,6 @@
 use std::process::Command;
+
+#[cfg(not(windows))]
 use std::process::Stdio;
 
 // A CDP RunGame call returning only means the JS ran; Steam can still silently drop it (measured

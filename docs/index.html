@@ -97,7 +97,7 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px;
 </section>
 
 <footer>
-<span>FIXED v0.2 · community client, not affiliated with online-fix.me · does not host any game files</span>
+<span id="site-version">FIXED v0.2 · community client, not affiliated with online-fix.me · does not host any game files</span>
 <span><a href="https://github.com/edersonff/fixed/releases">Releases</a> · <a href="https://github.com/edersonff/fixed">GitHub</a></span>
 </footer>
 </div>
@@ -118,6 +118,10 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px;
   fetch('https://api.github.com/repos/edersonff/fixed/releases/latest')
     .then(function (r) { return r.json(); })
     .then(function (rel) {
+      var ver = document.getElementById('site-version');
+      if (ver && rel.tag_name) {
+        ver.textContent = 'FIXED ' + rel.tag_name + ' · community client, not affiliated with online-fix.me · does not host any game files';
+      }
       var assets = (rel.assets || []).map(function (a) { return a.browser_download_url; });
       var pick = platform === 'windows'
         ? assets.find(function (u) { return u.endsWith('.exe'); }) || assets.find(function (u) { return u.endsWith('.msi'); })

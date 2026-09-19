@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
+import { getCurrentWindow } from "@tauri-apps/api/window";
+
 import { listen } from "@tauri-apps/api/event";
 
 import type { LaunchProgressPayload } from "../types";
@@ -84,13 +86,25 @@ export function useGameLaunch(gameTitle: string) {
 
     setLaunchMsg("Checking game");
 
-    invoke<string>("launch_game", { title: gameTitle }).catch((reason: unknown) => {
+    invoke<string>("launch_game", { title: gameTitle })
 
-      setPhase("failed");
+      .then((result) => {
 
-      setLaunchMsg(`Launch Failed: ${String(reason)}`);
+        if (result.startsWith("launched:")) {
 
-    });
+          getCurrentWindow().minimize().catch(() => undefined);
+
+        }
+
+      })
+
+      .catch((reason: unknown) => {
+
+        setPhase("failed");
+
+        setLaunchMsg(`Launch Failed: ${String(reason)}`);
+
+      });
 
   }
 
