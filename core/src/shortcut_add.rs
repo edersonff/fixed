@@ -8,7 +8,7 @@ use crate::vdf_string;
 
 pub const ONLINE_FIX_DLL_OVERRIDES: &str = "winhttp=n,b;WINMM=n,b;SteamOverlay64=n,b;steam_api64=n,b";
 
-pub const ONLINE_FIX_LAUNCH_OPTIONS: &str = "WINEDLLOVERRIDES=\"winhttp=n,b;WINMM=n,b;SteamOverlay64=n,b;steam_api64=n,b\" %command%";
+pub const ONLINE_FIX_LAUNCH_OPTIONS: &str = "WINEDLLOVERRIDES=\"winhttp=n,b;OnlineFix64=n;SteamOverlay64=n;winmm=n,b;dnet=n;steam_api64=n\" %command%";
 
 pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_dir: &str, launch_options: &str) -> Result<u32, String> {
 
