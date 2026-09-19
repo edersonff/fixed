@@ -72,7 +72,7 @@ fn json_quote(value: &str) -> String {
 
 }
 
-async fn cdp_evaluate(expression: &str) -> Result<Value, String> {
+async fn cdp_evaluate(expression: &str) -> Result<Option<Value>, String> {
 
     let ws_url = shared_js_ws_url()?;
 
@@ -86,7 +86,7 @@ async fn cdp_evaluate(expression: &str) -> Result<Value, String> {
 
 }
 
-fn cdp_evaluate_blocking(ws_url: &str, expression: &str) -> Result<Value, String> {
+fn cdp_evaluate_blocking(ws_url: &str, expression: &str) -> Result<Option<Value>, String> {
 
     use tungstenite::Message;
 
@@ -154,13 +154,7 @@ fn cdp_evaluate_blocking(ws_url: &str, expression: &str) -> Result<Value, String
 
         }
 
-        return parsed
-
-            .pointer("/result/result/value")
-
-            .cloned()
-
-            .ok_or_else(|| String::from("cef evaluate: no value"));
+        return Ok(parsed.pointer("/result/result/value").cloned());
 
     }
 
@@ -178,7 +172,11 @@ pub async fn cef_add_shortcut(name: &str, exe: &str) -> Result<u32, String> {
 
     );
 
-    let value = cdp_evaluate(&expression).await?;
+    let value = cdp_evaluate(&expression)
+
+        .await?
+
+        .ok_or_else(|| String::from("cef AddShortcut returned no value"))?;
 
     let appid = value
 
@@ -212,16 +210,53 @@ pub async fn cef_set_launch_options(appid: u32, launch_options: &str) -> Result<
 
 }
 
+pub async fn cef_app_known(appid: u32) -> Result<bool, String> {
+
+    let expression = format!(
+
+        "(() => {{ try {{ return appStore.m_mapApps.get({}) != null; }} catch (error) {{ return true; }} }})()",
+
+        appid,
+
+    );
+
+    let known = cdp_evaluate(&expression)
+
+        .await?
+
+        .and_then(|value| value.as_bool())
+
+        .unwrap_or(true);
+
+    eprintln!("[CEF] app known {} -> {}", appid, known);
+
+    Ok(known)
+
+}
+
+// gid values exceed Number.MAX_SAFE_INTEGER (measured 2026-09-19: 10739533279498600448 for a real
+// shortcut), so a bare numeric literal gets rounded by JS float precision and RunGame silently
+// receives the wrong id. Passing it as a string is what every working CDP launcher does.
+fn run_game_expression(gid: u64) -> String {
+
+    format!("SteamClient.Apps.RunGame(\"{}\", \"\", -1, 100)", gid)
+
+}
+
 pub async fn cef_run_game(appid: u32) -> Result<u64, String> {
 
     let gid = ((appid as u64) << 32) | 0x02000000;
 
-    let expression = format!("SteamClient.Apps.RunGame({}, \"\", -1, 100)", gid);
+    let expression = run_game_expression(gid);
 
     cdp_evaluate(&expression).await?;
 
-    eprintln!("[CEF] RunGame gid {} ok", gid);
+    eprintln!("[CEF] RunGame call for gid {} (appid {}) returned, not yet confirmed running", gid, appid);
 
     Ok(gid)
 
 }
+
+#[cfg(test)]
+#[path = "steam_ipc_tests.rs"]
+mod steam_ipc_tests;
