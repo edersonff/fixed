@@ -200,6 +200,32 @@ fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<Stri
 
     }
 
+    // Webhelper spawns ~10s before login completes, and the URL path has no login signal of its
+    // own; firing mid-login is the measured cause of in-game "Steam unavailable" dialogs. The CEF
+    // port is the best available proxy (port opened 8-9s before "Welcome to" in cold boots), and
+    // without it a fixed settle is the honest floor.
+    let mut port_tries = 0;
+
+    while !crate::steam_ipc::cef_port_open() && port_tries < 15 {
+
+        crate::launch_progress::emit_progress(app, title, "waiting-steam", &format!("login settle {}s", port_tries * 2));
+
+        std::thread::sleep(std::time::Duration::from_secs(2));
+
+        port_tries += 1;
+
+    }
+
+    if crate::steam_ipc::cef_port_open() {
+
+        std::thread::sleep(std::time::Duration::from_secs(12));
+
+    } else {
+
+        std::thread::sleep(std::time::Duration::from_secs(15));
+
+    }
+
     crate::launch_progress::emit_progress(app, title, "launching", "");
 
     let (vdf, _) = steam_paths()?;
