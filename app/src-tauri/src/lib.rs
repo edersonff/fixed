@@ -58,7 +58,11 @@ pub fn run() {
 
     let games_dir = helpers::games_root().unwrap_or_else(|| std::env::temp_dir().join("games"));
 
-    std::fs::create_dir_all(&games_dir).expect("create games directory");
+    if let Err(error) = std::fs::create_dir_all(&games_dir) {
+
+        eprintln!("[BOOT] games dir {} not writable (downloads will fail honestly): {}", games_dir.display(), error);
+
+    }
 
     let mut session_opts = SessionOptions::default();
 

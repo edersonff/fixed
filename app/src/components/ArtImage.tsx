@@ -92,6 +92,10 @@ export function ArtImage({ title, sources, loading, className, alt }: ArtImagePr
 
         alt={alt}
 
+        loading="lazy"
+
+        decoding="async"
+
         referrerPolicy="no-referrer"
 
         onLoad={measure}
