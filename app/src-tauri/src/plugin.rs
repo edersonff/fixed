@@ -1,3 +1,4 @@
+use crate::flog;
 #[tauri::command]
 
 pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String> {
@@ -9,7 +10,7 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
         let message = format!("no game exe found in {}", folder);
 
-        eprintln!("[PLUGIN] {}: {}", title, message);
+        flog(&format!("[PLUGIN] {}: {}", title, message));
 
         return Err(message);
 
@@ -27,7 +28,7 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
     if !bep_core.exists() {
 
-        eprintln!("[PLUGIN] {}: BepInEx loader not found, plugin placed anyway", title);
+        flog(&format!("[PLUGIN] {}: BepInEx loader not found, plugin placed anyway", title));
 
     }
 
@@ -35,19 +36,19 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
         Ok(count) => {
 
-            eprintln!("[PLUGIN] {}: installed {} file(s) into {}", title, count, game_dir);
+            flog(&format!("[PLUGIN] {}: installed {} file(s) into {}", title, count, game_dir));
 
             match fix_core::apply_fix_repair(&folder, &game_dir) {
 
                 Ok(repaired) if repaired > 0 => {
 
-                    eprintln!("[PLUGIN] {}: fix repair reapplied ({} archive) over plugin", title, repaired);
+                    flog(&format!("[PLUGIN] {}: fix repair reapplied ({} archive) over plugin", title, repaired));
 
                 }
 
-                Ok(_) => eprintln!("[PLUGIN] {}: no fix repair archive present", title),
+                Ok(_) => flog(&format!("[PLUGIN] {}: no fix repair archive present", title)),
 
-                Err(error) => eprintln!("[PLUGIN] {}: fix repair FAILED: {}", title, error),
+                Err(error) => flog(&format!("[PLUGIN] {}: fix repair FAILED: {}", title, error)),
 
             }
 
@@ -57,7 +58,7 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
         Err(error) => {
 
-            eprintln!("[PLUGIN] {}: FAILED: {}", title, error);
+            flog(&format!("[PLUGIN] {}: FAILED: {}", title, error));
 
             Err(error)
 

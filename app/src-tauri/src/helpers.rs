@@ -1,3 +1,4 @@
+use crate::flog;
 pub fn looks_like_rar(path: &std::path::Path) -> bool {
 
     let Ok(mut file) = std::fs::File::open(path) else {
@@ -42,7 +43,7 @@ pub fn extract_first_rar(folder: &str) -> Result<u32, String> {
 
         if !looks_like_rar(rar) {
 
-            eprintln!("[DL] skipping invalid archive: {}", rar.display());
+            flog(&format!("[DL] skipping invalid archive: {}", rar.display()));
 
             continue;
 
@@ -54,7 +55,7 @@ pub fn extract_first_rar(folder: &str) -> Result<u32, String> {
 
             Err(error) => {
 
-                eprintln!("[DL] extract failed for {}: {}", rar.display(), error);
+                flog(&format!("[DL] extract failed for {}: {}", rar.display(), error));
 
                 last_error = error;
 
@@ -158,7 +159,7 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
     let Some(vdf) = find_shortcuts_vdf() else {
 
-        eprintln!("[DL] {}: steam shortcuts.vdf not found", title);
+        flog(&format!("[DL] {}: steam shortcuts.vdf not found", title));
 
         return false;
 
@@ -166,7 +167,7 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
     if let Some(appid) = fix_core::find_shortcut_appid(&vdf, title) {
 
-        eprintln!("[DL] {}: already in Steam (appid {})", title, appid);
+        flog(&format!("[DL] {}: already in Steam (appid {})", title, appid));
 
         return false;
 
@@ -174,7 +175,7 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
     let Some(exe) = fix_core::find_game_exe(folder) else {
 
-        eprintln!("[DL] {}: no game exe found in {}", title, folder);
+        flog(&format!("[DL] {}: no game exe found in {}", title, folder));
 
         return false;
 
@@ -192,7 +193,7 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
         Ok(index) => {
 
-            eprintln!("[DL] {}: added to Steam (index {})", title, index);
+            flog(&format!("[DL] {}: added to Steam (index {})", title, index));
 
             true
 
@@ -200,7 +201,7 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
         Err(error) => {
 
-            eprintln!("[DL] {}: steam shortcut FAILED: {}", title, error);
+            flog(&format!("[DL] {}: steam shortcut FAILED: {}", title, error));
 
             false
 
@@ -232,9 +233,9 @@ pub fn delete_installers(folder: &str) {
 
         match std::fs::remove_file(&path) {
 
-            Ok(()) => eprintln!("[DL] installer removed: {}", path.display()),
+            Ok(()) => flog(&format!("[DL] installer removed: {}", path.display())),
 
-            Err(error) => eprintln!("[DL] installer remove FAILED: {}: {}", path.display(), error),
+            Err(error) => flog(&format!("[DL] installer remove FAILED: {}: {}", path.display(), error)),
 
         }
 
@@ -244,7 +245,7 @@ pub fn delete_installers(folder: &str) {
 
 pub fn log_fail(title: &str, step: &str, error: String) -> String {
 
-    eprintln!("[DL] {}: {} FAILED: {}", title, step, error);
+    flog(&format!("[DL] {}: {} FAILED: {}", title, step, error));
 
     error
 

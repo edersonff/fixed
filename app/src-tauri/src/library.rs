@@ -1,3 +1,4 @@
+use crate::flog;
 use crate::games_root;
 
 use serde::Serialize;
@@ -77,7 +78,7 @@ pub fn installed_games() -> Vec<InstalledGame> {
 
     let result = installed_games_scan();
 
-    eprintln!("[PROF] installed_games {}ms", start.elapsed().as_millis());
+    flog(&format!("[PROF] installed_games {}ms", start.elapsed().as_millis()));
 
     result
 

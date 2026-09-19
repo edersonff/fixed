@@ -1,3 +1,4 @@
+use crate::flog;
 use crate::find_shortcuts_vdf;
 
 // Steam is the only thing that can hand the game a real session: `reaper SteamLaunch AppId=...`
@@ -73,7 +74,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
         if !crate::steam_ipc::cef_app_known(found).await? {
 
-            eprintln!("[LAUNCH] {}: appid {} unknown to running steam, re-registering", title, found);
+            flog(&format!("[LAUNCH] {}: appid {} unknown to running steam, re-registering", title, found));
 
             appid = None;
 
@@ -141,7 +142,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
         Err(error) => {
 
-            eprintln!("[LAUNCH] {}: CEF RunGame failed ({}), falling back to url", title, error);
+            flog(&format!("[LAUNCH] {}: CEF RunGame failed ({}), falling back to url", title, error));
 
             let url = format!("steam://rungameid/{}", fix_core::shortcut_gameid(appid));
 
@@ -153,7 +154,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
     };
 
-    eprintln!("[LAUNCH] {}: RunGame fired for gid {} (appid {}), confirming with steam", title, gid, appid);
+    flog(&format!("[LAUNCH] {}: RunGame fired for gid {} (appid {}), confirming with steam", title, gid, appid));
 
     crate::launch_progress::emit_progress(app, title, "launching", "fired, waiting for steam to start it");
 
@@ -171,7 +172,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
         .await
         .map_err(|error| format!("launch monitor join: {}", error))??;
 
-    eprintln!("[LAUNCH] {}: confirmed running (pid {}, gid {}, appid {})", title, pid, gid, appid);
+    flog(&format!("[LAUNCH] {}: confirmed running (pid {}, gid {}, appid {})", title, pid, gid, appid));
 
     crate::launch_progress::emit_progress(app, title, "done", &gid.to_string());
 
@@ -193,7 +194,7 @@ fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<Stri
 
         let message = String::from("steam did not come up");
 
-        eprintln!("[LAUNCH] {}: {}", title, message);
+        flog(&format!("[LAUNCH] {}: {}", title, message));
 
         return Err(message);
 
@@ -215,7 +216,7 @@ fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<Stri
 
     let pid = crate::steam_client::open_url(&url)?;
 
-    eprintln!("[LAUNCH] {}: {} (pid {})", title, url, pid);
+    flog(&format!("[LAUNCH] {}: {} (pid {})", title, url, pid));
 
     crate::launch_progress::emit_progress(app, title, "done", &url);
 
@@ -236,7 +237,7 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
         let message = format!("no game exe found in {}", folder);
 
-        eprintln!("[LAUNCH] {}: {}", title, message);
+        flog(&format!("[LAUNCH] {}: {}", title, message));
 
         return Err(message);
 
@@ -248,7 +249,7 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
         Err(cef_error) => {
 
-            eprintln!("[LAUNCH] {}: CEF flow failed ({}), falling back to legacy vdf flow", title, cef_error);
+            flog(&format!("[LAUNCH] {}: CEF flow failed ({}), falling back to legacy vdf flow", title, cef_error));
 
             legacy_flow(app, title, &folder)
 

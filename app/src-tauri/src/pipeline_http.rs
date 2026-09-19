@@ -1,3 +1,4 @@
+use crate::flog;
 use crate::DownloadEngine;
 use crate::DownloadProgress;
 use crate::add_game_to_steam;
@@ -43,9 +44,9 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
             match std::fs::remove_file(&path) {
 
-                Ok(()) => eprintln!("[DL] pre-clean removed stale archive: {}", path.display()),
+                Ok(()) => flog(&format!("[DL] pre-clean removed stale archive: {}", path.display())),
 
-                Err(error) => eprintln!("[DL] pre-clean kept {}: {}", path.display(), error),
+                Err(error) => flog(&format!("[DL] pre-clean kept {}: {}", path.display(), error)),
 
             }
 
@@ -57,7 +58,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
     let total = fix_core::http_size(&mirror_url);
 
-    eprintln!("[DL] {}: http mirror {} ({} bytes)", title, mirror_url, total);
+    flog(&format!("[DL] {}: http mirror {} ({} bytes)", title, mirror_url, total));
 
     let cancel_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
 
@@ -119,7 +120,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
             let bytes_total = emitter_total.load(std::sync::atomic::Ordering::Relaxed);
 
-            eprintln!("[DL] {}: {}/{} bytes (http)", emitter_title, bytes, bytes_total);
+            flog(&format!("[DL] {}: {}/{} bytes (http)", emitter_title, bytes, bytes_total));
 
             let _ = emitter_app.emit("download-progress", DownloadProgress {
 
@@ -207,7 +208,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
             Ok(()) => {
 
-                eprintln!("[DL] {}: http download complete, extracting", pipeline_title);
+                flog(&format!("[DL] {}: http download complete, extracting", pipeline_title));
 
                 let _ = pipeline_app.emit("download-progress", DownloadProgress {
 
@@ -233,7 +234,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
                     Ok(count) => {
 
-                        eprintln!("[DL] {}: extracted {} files", pipeline_title, count);
+                        flog(&format!("[DL] {}: extracted {} files", pipeline_title, count));
 
                         add_game_to_steam(&pipeline_title, &pipeline_folder);
 
@@ -245,7 +246,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
                     Err(error) => {
 
-                        eprintln!("[DL] {}: extract FAILED: {}", pipeline_title, error);
+                        flog(&format!("[DL] {}: extract FAILED: {}", pipeline_title, error));
 
                         String::from("error")
 
@@ -271,7 +272,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
                 if error == "cancelled" {
 
-                    eprintln!("[DL] {}: http download stopped by user", pipeline_title);
+                    flog(&format!("[DL] {}: http download stopped by user", pipeline_title));
 
                     let _ = std::fs::remove_file(&dl_dest);
 
@@ -289,7 +290,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
                 } else {
 
-                    eprintln!("[DL] {}: http download FAILED: {}", pipeline_title, error);
+                    flog(&format!("[DL] {}: http download FAILED: {}", pipeline_title, error));
 
                     let _ = pipeline_app.emit("download-progress", DownloadProgress {
 

@@ -1,3 +1,4 @@
+use crate::flog;
 use tauri::Manager;
 
 pub(crate) const LANE_AUTO_CLICK: &str = r#"
@@ -53,7 +54,7 @@ pub fn open_download_window(app: tauri::AppHandle, url: String) -> Result<(), St
 
             tauri::webview::DownloadEvent::Requested { url, destination } => {
 
-                eprintln!("[LANE-TEST] REQUESTED: {} -> {:?}", url, destination);
+                flog(&format!("[LANE-TEST] REQUESTED: {} -> {:?}", url, destination));
 
                 false
 
@@ -61,7 +62,7 @@ pub fn open_download_window(app: tauri::AppHandle, url: String) -> Result<(), St
 
             tauri::webview::DownloadEvent::Finished { url, path, success } => {
 
-                eprintln!("[LANE-TEST] FINISHED: {} {:?} ok={}", url, path, success);
+                flog(&format!("[LANE-TEST] FINISHED: {} {:?} ok={}", url, path, success));
 
                 true
 

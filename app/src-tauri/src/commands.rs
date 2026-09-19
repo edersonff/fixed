@@ -1,3 +1,4 @@
+use crate::flog;
 use fix_core::discover_parts;
 use crate::DownloadEngine;
 use crate::DownloadProgress;
@@ -9,7 +10,7 @@ pub(crate) fn prof_span<T>(label: &str, run: impl FnOnce() -> T) -> T {
 
     let result = run();
 
-    eprintln!("[PROF] {} {}ms", label, start.elapsed().as_millis());
+    flog(&format!("[PROF] {} {}ms", label, start.elapsed().as_millis()));
 
     result
 
@@ -87,7 +88,7 @@ pub async fn cancel_all_downloads(engine: tauri::State<'_, DownloadEngine>) -> R
 
             if let Err(error) = session.pause(&handle).await {
 
-                eprintln!("[DL] pause all failed: {}", error);
+                flog(&format!("[DL] pause all failed: {}", error));
 
             }
 
@@ -123,7 +124,7 @@ pub async fn game_assets(title: String) -> Result<Option<fix_core::GameAssets>, 
 
             if let Some(assets) = &found {
 
-                eprintln!("[ASSETS] {}: appid {} hero {}", log_title, assets.appid, assets.hero_url);
+                flog(&format!("[ASSETS] {}: appid {} hero {}", log_title, assets.appid, assets.hero_url));
 
             }
 
@@ -157,7 +158,7 @@ pub async fn cancel_download(app: tauri::AppHandle, engine: tauri::State<'_, Dow
 
                 flag.store(true, std::sync::atomic::Ordering::Relaxed);
 
-                eprintln!("[DL] {}: cancel requested", title);
+                flog(&format!("[DL] {}: cancel requested", title));
 
                 true
 
@@ -205,7 +206,7 @@ pub async fn cancel_download(app: tauri::AppHandle, engine: tauri::State<'_, Dow
 
             .map_err(|error| format!("pause: {}", error))?;
 
-        eprintln!("[DL] {}: torrent paused by user", title);
+        flog(&format!("[DL] {}: torrent paused by user", title));
 
         let _ = app.emit("download-progress", DownloadProgress {
 

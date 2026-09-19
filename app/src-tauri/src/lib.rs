@@ -33,6 +33,47 @@ pub use pipeline_torrent::*;
 pub use plugin::*;
 pub use state::*;
 
+// Windows GUI builds have no console: eprintln alone vanishes, so every diagnostic line also
+// lands in ~/.cache/fixed/logs/app.log (USERPROFILE-aware via home_dir). This file is the
+// evidence source for crashes and game-level errors reported on the owner's machine.
+pub(crate) fn flog(message: &str) {
+
+    eprintln!("{}", message);
+
+    let Some(home) = helpers::home_dir() else {
+
+        return;
+
+    };
+
+    let dir = std::path::PathBuf::from(home).join(".cache/fixed/logs");
+
+    if std::fs::create_dir_all(&dir).is_err() {
+
+        return;
+
+    }
+
+    let secs = std::time::SystemTime::now()
+
+        .duration_since(std::time::UNIX_EPOCH)
+
+        .map(|elapsed| elapsed.as_secs())
+
+        .unwrap_or(0);
+
+    let _ = std::fs::OpenOptions::new()
+
+        .create(true)
+
+        .append(true)
+
+        .open(dir.join("app.log"))
+
+        .and_then(|mut file| std::io::Write::write_all(&mut file, format!("[{}] {}\n", secs, message).as_bytes()));
+
+}
+
 // WebKitGTK's dmabuf path fails on hybrid/NVIDIA setups ("Failed to create GBM buffer") and the
 // window renders fully black. Measured on the 0.2.1 release bundle: black without this, correct with it.
 #[cfg(target_os = "linux")]
@@ -54,7 +95,17 @@ fn disable_broken_dmabuf_renderer() {}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
 
-    eprintln!("[BOOT] run entry");
+    let default_panic = std::panic::take_hook();
+
+    std::panic::set_hook(Box::new(move |info| {
+
+        flog(&format!("[PANIC] {}", info));
+
+        default_panic(info);
+
+    }));
+
+    flog("[BOOT] run entry");
 
     disable_broken_dmabuf_renderer();
 
@@ -62,7 +113,7 @@ pub fn run() {
 
     if let Err(error) = std::fs::create_dir_all(&games_dir) {
 
-        eprintln!("[BOOT] games dir {} not writable (downloads will fail honestly): {}", games_dir.display(), error);
+        flog(&format!("[BOOT] games dir {} not writable (downloads will fail honestly): {}", games_dir.display(), error));
 
     }
 
@@ -160,7 +211,7 @@ pub fn run() {
 
                                 *slot = Some(session);
 
-                                eprintln!("[DL] torrent engine ready");
+                                flog(&format!("[DL] torrent engine ready"));
 
                             }
 
@@ -170,7 +221,7 @@ pub fn run() {
 
                     Err(error) => {
 
-                        eprintln!("[DL] torrent engine failed to start (torrent lane disabled): {}", error);
+                        flog(&format!("[DL] torrent engine failed to start (torrent lane disabled): {}", error));
 
                     }
 

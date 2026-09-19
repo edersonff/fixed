@@ -1,3 +1,4 @@
+use crate::flog;
 use serde_json::Value;
 
 pub const CEF_DEBUG_PORT: u16 = 8080;
@@ -20,7 +21,7 @@ pub fn ensure_cef_flag() -> Result<bool, String> {
 
     std::fs::File::create(&path).map_err(|error| format!("create cef flag: {}", error))?;
 
-    eprintln!("[CEF] flag created at {}", path.display());
+    flog(&format!("[CEF] flag created at {}", path.display()));
 
     Ok(true)
 
@@ -184,7 +185,7 @@ pub async fn cef_add_shortcut(name: &str, exe: &str) -> Result<u32, String> {
 
         .ok_or_else(|| format!("cef AddShortcut returned non-number: {:?}", value))?;
 
-    eprintln!("[CEF] AddShortcut {} -> appid {}", name, appid);
+    flog(&format!("[CEF] AddShortcut {} -> appid {}", name, appid));
 
     Ok(appid as u32)
 
@@ -204,7 +205,7 @@ pub async fn cef_set_launch_options(appid: u32, launch_options: &str) -> Result<
 
     cdp_evaluate(&expression).await?;
 
-    eprintln!("[CEF] SetShortcutLaunchOptions {} ok", appid);
+    flog(&format!("[CEF] SetShortcutLaunchOptions {} ok", appid));
 
     Ok(())
 
@@ -228,7 +229,7 @@ pub async fn cef_app_known(appid: u32) -> Result<bool, String> {
 
         .unwrap_or(true);
 
-    eprintln!("[CEF] app known {} -> {}", appid, known);
+    flog(&format!("[CEF] app known {} -> {}", appid, known));
 
     Ok(known)
 
@@ -251,7 +252,7 @@ pub async fn cef_run_game(appid: u32) -> Result<u64, String> {
 
     cdp_evaluate(&expression).await?;
 
-    eprintln!("[CEF] RunGame call for gid {} (appid {}) returned, not yet confirmed running", gid, appid);
+    flog(&format!("[CEF] RunGame call for gid {} (appid {}) returned, not yet confirmed running", gid, appid));
 
     Ok(gid)
 

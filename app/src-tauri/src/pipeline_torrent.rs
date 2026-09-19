@@ -1,3 +1,4 @@
+use crate::flog;
 use bytes::Bytes;
 use librqbit::AddTorrent;
 use librqbit::AddTorrentOptions;
@@ -103,7 +104,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
                 _ = cancel_token.cancelled() => {
 
-                    eprintln!("[DL] {}: session cancelled, emitter stopped", emit_title);
+                    flog(&format!("[DL] {}: session cancelled, emitter stopped", emit_title));
 
                     break;
 
@@ -115,7 +116,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
             if matches!(stats.state, TorrentStatsState::Paused) {
 
-                eprintln!("[DL] {}: paused by user, emitter stopped", emit_title);
+                flog(&format!("[DL] {}: paused by user, emitter stopped", emit_title));
 
                 let _ = app.emit("download-progress", DownloadProgress {
 
@@ -143,7 +144,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
             }
 
-            eprintln!("[DL] {}: {}/{} bytes", emit_title, stats.progress_bytes, stats.total_bytes);
+            flog(&format!("[DL] {}: {}/{} bytes", emit_title, stats.progress_bytes, stats.total_bytes));
 
             let _ = app.emit("download-progress", DownloadProgress {
 
@@ -159,7 +160,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
             if stats.finished || (stats.total_bytes > 0 && stats.progress_bytes >= stats.total_bytes) {
 
-                eprintln!("[DL] {}: download complete, extracting", emit_title);
+                flog(&format!("[DL] {}: download complete, extracting", emit_title));
 
                 let _ = app.emit("download-progress", DownloadProgress {
 
@@ -203,7 +204,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
                         Ok(count) => {
 
-                            eprintln!("[DL] {}: extracted {} files", extract_title, count);
+                            flog(&format!("[DL] {}: extracted {} files", extract_title, count));
 
                             add_game_to_steam(&extract_title, &extract_folder);
 
@@ -215,7 +216,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
                         Err(error) => {
 
-                            eprintln!("[DL] {}: extract FAILED: {}", extract_title, error);
+                            flog(&format!("[DL] {}: extract FAILED: {}", extract_title, error));
 
                             String::from("error")
 

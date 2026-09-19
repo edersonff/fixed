@@ -1,3 +1,4 @@
+use crate::flog;
 use std::collections::HashSet;
 use std::sync::Mutex;
 use std::sync::OnceLock;
@@ -136,7 +137,7 @@ pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32,
 
     };
 
-    eprintln!("[LAUNCH] {}: running, pid {} ({})", title, pid, basename);
+    flog(&format!("[LAUNCH] {}: running, pid {} ({})", title, pid, basename));
 
     crate::launch_progress::emit_progress(app, title, "running", &format!("pid {}", pid));
 
@@ -166,11 +167,11 @@ fn watch_exit(app: &tauri::AppHandle, title: &str, pid: u32, _guard: TitleGuard)
 
     if ran_for < QUICK_EXIT_THRESHOLD {
 
-        eprintln!("[LAUNCH] {}: exited within {}s of starting, {} — likely failed to run", title, QUICK_EXIT_THRESHOLD.as_secs(), detail);
+        flog(&format!("[LAUNCH] {}: exited within {}s of starting, {} — likely failed to run", title, QUICK_EXIT_THRESHOLD.as_secs(), detail));
 
     } else {
 
-        eprintln!("[LAUNCH] {}: exited, {}", title, detail);
+        flog(&format!("[LAUNCH] {}: exited, {}", title, detail));
 
     }
 
