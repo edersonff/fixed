@@ -48,10 +48,14 @@ jobs:
       - name: Core check
         working-directory: core
         run: cargo check --verbose
+        env:
+          RUSTFLAGS: -D warnings
 
       - name: App check
         working-directory: app/src-tauri
         run: cargo check --verbose
+        env:
+          RUSTFLAGS: -D warnings
 
   test:
     runs-on: ubuntu-latest

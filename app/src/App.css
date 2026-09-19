@@ -209,7 +209,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .progress-shimmer { position: absolute; z-index: 2; inset: 0 auto 0 0; width: 55%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .46), transparent); mix-blend-mode: screen; pointer-events: none; }
 .parts { margin: 8px 0 0; padding-left: 16px; color: var(--muted); font-size: var(--size-meta); line-height: 1.7; }
 .ready-actions { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-.play, .ghost { display: inline-flex; align-items: center; gap: 7px; height: var(--button-action-height); padding: 0 16px; border-radius: var(--button-radius); font-weight: 800; transition: transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
+.play, .ghost { display: inline-flex; align-items: center; gap: 7px; height: var(--button-action-height); padding: 0 16px; border-radius: var(--button-radius); font-weight: 800; transition: opacity var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
 .play { min-height: 48px; height: 48px; background: var(--lime); color: #10130c; }
 .play:hover { background: var(--lime-soft); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; }
@@ -242,6 +242,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .action-icon { display: inline-flex; transition: transform var(--dur-micro) var(--ease-standard); }
 .action-button:hover .action-icon, .hero-cta:hover .action-icon { transform: translateY(2px); }
 .launch-note { margin-top: 8px; color: var(--lime); font-size: var(--size-meta); font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.launch-progress { color: var(--muted); }
 .launch-error { color: var(--danger); }
 .uninstall-confirm { display: grid; gap: 8px; margin-top: 10px; padding: 10px; border: 1px solid rgba(255, 122, 122, .24); border-radius: 10px; background: rgba(9, 12, 16, .54); }
 .uninstall-confirm p { color: var(--text); font-size: 11px; line-height: 1.35; }

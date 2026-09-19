@@ -2,21 +2,29 @@ import { useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
-import { FolderOpen, Play, Puzzle, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
+
+import { LibraryCardActions } from "./LibraryCardActions";
+
+import { LibraryCardNote } from "./LibraryCardNote";
+
+import { LibraryCardUninstallConfirm } from "./LibraryCardUninstallConfirm";
 
 import { useGameAssets } from "../hooks/useGameAssets";
 
 import { useGameLaunch } from "../hooks/useGameLaunch";
 
+import { useGameUninstall } from "../hooks/useGameUninstall";
+
 import { usePluginInstall } from "../hooks/usePluginInstall";
 
 import { diskSize, displayTitle } from "../lib/format";
 
-import { actionHover, actionPressDown, fadeRiseVariants, liftOnHover, pressDown } from "../lib/motion";
+import { fadeRiseVariants, liftOnHover, pressDown } from "../lib/motion";
 
 import type { InstalledGame } from "../types";
 
@@ -50,31 +58,13 @@ export function LibraryCard({
 
   const [logoFailed, setLogoFailed] = useState(false);
 
-  const [confirming, setConfirming] = useState(false);
-
-  const [uninstalling, setUninstalling] = useState(false);
-
-  const [uninstallMsg, setUninstallMsg] = useState("");
-
-  const { launching, launchMsg, launch } = useGameLaunch(game.title);
+  const { launching, launchMsg, phase, launch } = useGameLaunch(game.title);
 
   const { pluginMsg, addPlugin } = usePluginInstall(game.title);
 
-  function handleUninstall() {
+  const { confirming, setConfirming, uninstalling, uninstallMsg, setUninstallMsg, handleUninstall } =
 
-    setUninstalling(true);
-
-    setUninstallMsg("");
-
-    invoke<string>("uninstall_game", { title: game.title, removeFromSteam: true })
-
-      .then(() => onUninstalled())
-
-      .catch((reason: unknown) => setUninstallMsg(`Could not uninstall: ${String(reason)}`))
-
-      .finally(() => setUninstalling(false));
-
-  }
+    useGameUninstall(game.title, onUninstalled);
 
   return (
 
@@ -202,115 +192,59 @@ export function LibraryCard({
 
           </p>
 
-          <div className="ready-actions">
+          <LibraryCardActions
 
-            <motion.button
+            launching={launching}
 
-              type="button"
+            phase={phase}
 
-              className="play action-button"
+            onLaunch={(event) => {
 
-              whileHover={actionHover}
+              event.stopPropagation();
 
-              whileTap={actionPressDown}
+              launch();
 
-              disabled={launching}
+            }}
 
-              onClick={(event) => {
+            onAddPlugin={(event) => {
 
-                event.stopPropagation();
+              event.stopPropagation();
 
-                launch();
+              addPlugin();
 
-              }}
+            }}
 
-            >
+            onOpenFolder={(event) => {
 
-              <span className="action-icon">
+              event.stopPropagation();
 
-                <Play size={16} strokeWidth={2.4} />
+              invoke("open_game_folder", { folder: game.folder });
 
-              </span>
+            }}
 
-              {launching ? "Starting" : "Play"}
+          />
 
-            </motion.button>
+          <LibraryCardNote launchMsg={launchMsg} pluginMsg={pluginMsg} uninstallMsg={uninstallMsg} phase={phase} />
 
-            <button type="button" className="ghost" onClick={(event) => { event.stopPropagation(); addPlugin(); }}>
+          <AnimatePresence>
 
-              <Puzzle size={15} strokeWidth={2} />
+            {confirming && (
 
-              Add Plugin
+              <LibraryCardUninstallConfirm
 
-            </button>
+                key="uninstall-confirm"
 
-            <button
+                uninstalling={uninstalling}
 
-              type="button"
+                onKeep={() => setConfirming(false)}
 
-              className="ghost"
+                onRemove={handleUninstall}
 
-              onClick={(event) => {
+              />
 
-                event.stopPropagation();
+            )}
 
-                invoke("open_game_folder", { folder: game.folder });
-
-              }}
-
-            >
-
-              <FolderOpen size={15} strokeWidth={2} />
-
-              Folder
-
-            </button>
-
-          </div>
-
-          {(launchMsg || pluginMsg || uninstallMsg) && (
-
-            <p
-
-              className={
-
-                uninstallMsg || launchMsg.startsWith("Launch Failed") ? "launch-note launch-error" : "launch-note"
-
-              }
-
-            >
-
-              {uninstallMsg || launchMsg || pluginMsg}
-
-            </p>
-
-          )}
-
-          {confirming && (
-
-            <div className="uninstall-confirm" role="group" onClick={(event) => event.stopPropagation()}>
-
-              <p>Remove this game from your library?</p>
-
-              <div>
-
-                <button type="button" className="ghost" onClick={() => setConfirming(false)} disabled={uninstalling}>
-
-                  Keep
-
-                </button>
-
-                <button type="button" className="danger-button" onClick={handleUninstall} disabled={uninstalling}>
-
-                  {uninstalling ? "Removing" : "Remove"}
-
-                </button>
-
-              </div>
-
-            </div>
-
-          )}
+          </AnimatePresence>
 
         </div>
 

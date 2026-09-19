@@ -1,4 +1,4 @@
-import { titleKey } from "./titleKey";
+import { titleKey } from "./titleKey.ts";
 
 function assertEqual(actual: string, expected: string, label: string): void {
 

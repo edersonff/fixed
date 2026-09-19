@@ -72,13 +72,25 @@ pub async fn cancel_all_downloads(engine: tauri::State<'_, DownloadEngine>) -> R
 
 }
 
+// The catalog calls this once per visible game, so an unconditional line here floods startup
+// (measured 2026-09-19: ~20 lines before anything else happens). Off by default.
+fn assets_debug_enabled() -> bool {
+
+    std::env::var_os("FIX_DEBUG_ASSETS").is_some()
+
+}
+
 #[tauri::command]
 
 pub fn game_assets(title: String) -> Option<fix_core::GameAssets> {
 
     let assets = fix_core::game_assets(&title)?;
 
-    eprintln!("[ASSETS] {}: appid {} hero {}", title, assets.appid, assets.hero_url);
+    if assets_debug_enabled() {
+
+        eprintln!("[ASSETS] {}: appid {} hero {}", title, assets.appid, assets.hero_url);
+
+    }
 
     Some(assets)
 

@@ -59,6 +59,7 @@ jobs:
           name: fixed-linux
           path: |
             app/src-tauri/target/release/bundle/deb/*.deb
+            app/src-tauri/target/release/bundle/rpm/*.rpm
             app/src-tauri/target/release/bundle/appimage/*.AppImage
 
       - name: Upload Windows artifacts
@@ -75,6 +76,7 @@ jobs:
         with:
           files: |
             app/src-tauri/target/release/bundle/deb/*.deb
+            app/src-tauri/target/release/bundle/rpm/*.rpm
             app/src-tauri/target/release/bundle/appimage/*.AppImage
             app/src-tauri/target/release/bundle/nsis/*.exe
             app/src-tauri/target/release/bundle/msi/*.msi

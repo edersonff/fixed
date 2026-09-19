@@ -1,7 +1,7 @@
-use crate::steam::backup_vdf;
-use crate::steam::digits_before;
-use crate::steam::find_subslice;
-use crate::steam::vdf_string;
+use crate::backup_vdf;
+use crate::digits_before;
+use crate::find_subslice;
+use crate::vdf_string;
 
 fn skip_cstring(data: &[u8], pos: usize) -> Option<usize> {
 
@@ -11,9 +11,8 @@ fn skip_cstring(data: &[u8], pos: usize) -> Option<usize> {
 
 }
 
-// A generic binary-VDF object walker: given the position right after an object's opening
-// key-terminator, it consumes fields (nested object, string, int) until the matching 0x08 that
-// closes THIS object, so it works regardless of how many fields an entry carries.
+// Stops at the 0x08 that closes THIS object, not a fixed field count, so it works for any number
+// of fields an entry carries.
 fn skip_vdf_object(data: &[u8], mut pos: usize) -> Option<usize> {
 
     loop {

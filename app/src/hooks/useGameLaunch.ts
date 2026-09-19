@@ -20,19 +20,23 @@ const PHASE_LABELS: Record<string, string> = {
 
   launching: "Launching",
 
+  done: "Waiting for game",
+
+  running: "Running",
+
+  exited: "Exited",
+
 };
+
+const IDLE_PHASE = "idle";
+
+const RESOLVED_PHASES = new Set(["idle", "running", "exited", "failed"]);
 
 function phaseMessage(phase: string, detail: string): string {
 
   if (phase === "failed") {
 
     return `Launch Failed: ${detail}`;
-
-  }
-
-  if (phase === "done") {
-
-    return "Started";
 
   }
 
@@ -44,7 +48,7 @@ function phaseMessage(phase: string, detail: string): string {
 
 export function useGameLaunch(gameTitle: string) {
 
-  const [launching, setLaunching] = useState(false);
+  const [phase, setPhase] = useState(IDLE_PHASE);
 
   const [launchMsg, setLaunchMsg] = useState("");
 
@@ -60,17 +64,9 @@ export function useGameLaunch(gameTitle: string) {
 
       }
 
+      setPhase(progress.phase);
+
       setLaunchMsg(phaseMessage(progress.phase, progress.detail));
-
-      if (progress.phase === "failed" || progress.phase === "done") {
-
-        setLaunching(false);
-
-      } else {
-
-        setLaunching(true);
-
-      }
 
     });
 
@@ -84,22 +80,22 @@ export function useGameLaunch(gameTitle: string) {
 
   function launch() {
 
-    setLaunching(true);
+    setPhase("checking");
 
     setLaunchMsg("Checking game");
 
-    invoke<string>("launch_game", { title: gameTitle })
+    invoke<string>("launch_game", { title: gameTitle }).catch((reason: unknown) => {
 
-      .catch((reason: unknown) => {
+      setPhase("failed");
 
-        setLaunchMsg(`Launch Failed: ${String(reason)}`);
+      setLaunchMsg(`Launch Failed: ${String(reason)}`);
 
-      })
-
-      .finally(() => setLaunching(false));
+    });
 
   }
 
-  return { launching, launchMsg, launch };
+  const launching = !RESOLVED_PHASES.has(phase);
+
+  return { launching, launchMsg, phase, launch };
 
 }

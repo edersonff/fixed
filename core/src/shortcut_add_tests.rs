@@ -1,89 +1,5 @@
 use super::*;
 
-fn empty_shortcuts_vdf() -> Vec<u8> {
-
-    let mut data = Vec::new();
-
-    data.push(0);
-
-    data.extend_from_slice(b"shortcuts");
-
-    data.push(0);
-
-    data.push(8);
-
-    data.push(8);
-
-    data
-
-}
-
-#[test]
-fn shortcut_appid_matches_fnv1a_golden_value() {
-
-    assert_eq!(shortcut_appid("/games/Foo/Foo.exe", "Foo"), 2975550365);
-
-    assert_eq!(shortcut_appid("/games/Friendly Steps/Friendly Steps.exe", "Friendly Steps"), 2705359545);
-
-}
-
-#[test]
-fn shortcut_appid_sets_top_bit_even_when_the_raw_hash_does_not() {
-
-    assert_eq!(shortcut_appid("/x", "Probe10"), 0x902b7925);
-
-}
-
-#[test]
-fn shortcut_appid_changes_with_input() {
-
-    let a = shortcut_appid("/games/Foo/Foo.exe", "Foo");
-
-    let b = shortcut_appid("/games/Bar/Bar.exe", "Bar");
-
-    assert_ne!(a, b);
-
-}
-
-#[test]
-fn vdf_string_matches_binary_vdf_type_one_layout() {
-
-    let bytes = vdf_string("AppName", "Foo");
-
-    assert_eq!(bytes, [1u8, b'A', b'p', b'p', b'N', b'a', b'm', b'e', 0, b'F', b'o', b'o', 0]);
-
-}
-
-#[test]
-fn vdf_int_matches_binary_vdf_type_two_layout() {
-
-    let bytes = vdf_int("appid", 300u32);
-
-    let mut expected = vec![2u8];
-
-    expected.extend_from_slice(b"appid");
-
-    expected.push(0);
-
-    expected.extend_from_slice(&300u32.to_le_bytes());
-
-    assert_eq!(bytes, expected);
-
-}
-
-#[test]
-fn find_subslice_finds_needle_after_given_offset() {
-
-    let haystack = b"aaXbbXcc";
-
-    assert_eq!(find_subslice(haystack, b"X", 0), Some(2));
-
-    assert_eq!(find_subslice(haystack, b"X", 3), Some(5));
-
-    assert_eq!(find_subslice(haystack, b"X", 6), None);
-
-}
-
 #[test]
 fn add_steam_shortcut_rejects_file_without_map_terminator() {
 
@@ -106,18 +22,18 @@ fn add_steam_shortcut_round_trips_through_find_shortcut_appid() {
 
     let vdf_path = dir.path().join("shortcuts.vdf");
 
-    std::fs::write(&vdf_path, empty_shortcuts_vdf()).expect("write fixture");
+    std::fs::write(&vdf_path, crate::test_support::empty_shortcuts_vdf()).expect("write fixture");
 
     let path = vdf_path.to_str().unwrap();
 
     let returned = add_steam_shortcut(path, "Friendly Steps", "/games/Friendly Steps/Friendly Steps.exe", "/games/Friendly Steps/", ONLINE_FIX_LAUNCH_OPTIONS)
         .expect("add shortcut");
 
-    let expected_appid = shortcut_appid("/games/Friendly Steps/Friendly Steps.exe", "Friendly Steps");
+    let expected_appid = crate::shortcut_appid("/games/Friendly Steps/Friendly Steps.exe", "Friendly Steps");
 
     assert_eq!(returned, expected_appid);
 
-    let found = find_shortcut_appid(path, "Friendly Steps").expect("shortcut findable");
+    let found = crate::find_shortcut_appid(path, "Friendly Steps").expect("shortcut findable");
 
     assert_eq!(found, expected_appid);
 
@@ -130,7 +46,7 @@ fn add_steam_shortcut_is_idempotent_for_the_same_app_name() {
 
     let vdf_path = dir.path().join("shortcuts.vdf");
 
-    std::fs::write(&vdf_path, empty_shortcuts_vdf()).expect("write fixture");
+    std::fs::write(&vdf_path, crate::test_support::empty_shortcuts_vdf()).expect("write fixture");
 
     let path = vdf_path.to_str().unwrap();
 
@@ -149,7 +65,7 @@ fn add_steam_shortcut_returns_the_written_appid_for_each_distinct_app() {
 
     let vdf_path = dir.path().join("shortcuts.vdf");
 
-    std::fs::write(&vdf_path, empty_shortcuts_vdf()).expect("write fixture");
+    std::fs::write(&vdf_path, crate::test_support::empty_shortcuts_vdf()).expect("write fixture");
 
     let path = vdf_path.to_str().unwrap();
 
@@ -157,28 +73,15 @@ fn add_steam_shortcut_returns_the_written_appid_for_each_distinct_app() {
 
     let second = add_steam_shortcut(path, "Bar", "/games/Bar/Bar.exe", "/games/Bar/", ONLINE_FIX_LAUNCH_OPTIONS).expect("add bar");
 
-    assert_eq!(first, shortcut_appid("/games/Foo/Foo.exe", "Foo"));
+    assert_eq!(first, crate::shortcut_appid("/games/Foo/Foo.exe", "Foo"));
 
-    assert_eq!(second, shortcut_appid("/games/Bar/Bar.exe", "Bar"));
+    assert_eq!(second, crate::shortcut_appid("/games/Bar/Bar.exe", "Bar"));
 
     assert_ne!(first, second);
 
-    assert!(find_shortcut_appid(path, "Foo").is_some());
+    assert!(crate::find_shortcut_appid(path, "Foo").is_some());
 
-    assert!(find_shortcut_appid(path, "Bar").is_some());
-
-}
-
-#[test]
-fn find_shortcut_appid_returns_none_when_app_name_absent() {
-
-    let dir = tempfile::tempdir().expect("tempdir");
-
-    let vdf_path = dir.path().join("shortcuts.vdf");
-
-    std::fs::write(&vdf_path, empty_shortcuts_vdf()).expect("write fixture");
-
-    assert_eq!(find_shortcut_appid(vdf_path.to_str().unwrap(), "Nothing Here"), None);
+    assert!(crate::find_shortcut_appid(path, "Bar").is_some());
 
 }
 
@@ -189,7 +92,7 @@ fn add_steam_shortcut_writes_a_rollback_copy_of_the_original_bytes() {
 
     let vdf_path = dir.path().join("shortcuts.vdf");
 
-    let original = empty_shortcuts_vdf();
+    let original = crate::test_support::empty_shortcuts_vdf();
 
     std::fs::write(&vdf_path, &original).expect("write fixture");
 
@@ -212,7 +115,7 @@ fn add_steam_shortcut_leaves_the_backup_untouched_when_the_name_already_exists()
 
     let vdf_path = dir.path().join("shortcuts.vdf");
 
-    std::fs::write(&vdf_path, empty_shortcuts_vdf()).expect("write fixture");
+    std::fs::write(&vdf_path, crate::test_support::empty_shortcuts_vdf()).expect("write fixture");
 
     let path = vdf_path.to_str().unwrap();
 
@@ -235,7 +138,7 @@ fn add_steam_shortcut_refuses_to_mutate_when_the_backup_cannot_be_written() {
 
     let vdf_path = dir.path().join("shortcuts.vdf");
 
-    let original = empty_shortcuts_vdf();
+    let original = crate::test_support::empty_shortcuts_vdf();
 
     std::fs::write(&vdf_path, &original).expect("write fixture");
 
@@ -252,12 +155,37 @@ fn add_steam_shortcut_refuses_to_mutate_when_the_backup_cannot_be_written() {
 }
 
 #[test]
-fn shortcut_gameid_shifts_the_appid_into_the_high_word_with_the_shortcut_marker() {
+fn empty_shortcuts_vdf_fixture_is_a_correctly_terminated_empty_map() {
 
-    assert_eq!(shortcut_gameid(3299031949), 14169234329447694336);
+    let data = crate::test_support::empty_shortcuts_vdf();
 
-    assert_eq!(shortcut_gameid(3082930001), 13241083530185801728);
+    assert_eq!(&data[data.len() - 2..], [8u8, 8u8]);
 
-    assert_eq!(shortcut_gameid(1), 0x0000_0001_0200_0000);
+    assert_eq!(crate::test_support::top_level_keys(&data), vec![String::from("shortcuts")]);
+
+    assert!(crate::test_support::keys_under(&data, "shortcuts").is_empty());
+
+}
+
+#[test]
+fn add_steam_shortcut_nests_new_entries_inside_shortcuts_not_as_document_root_siblings() {
+
+    let dir = tempfile::tempdir().expect("tempdir");
+
+    let vdf_path = dir.path().join("shortcuts.vdf");
+
+    std::fs::write(&vdf_path, crate::test_support::empty_shortcuts_vdf()).expect("write fixture");
+
+    let path = vdf_path.to_str().unwrap();
+
+    add_steam_shortcut(path, "Foo", "/games/Foo/Foo.exe", "/games/Foo/", ONLINE_FIX_LAUNCH_OPTIONS).expect("add foo");
+
+    add_steam_shortcut(path, "Bar", "/games/Bar/Bar.exe", "/games/Bar/", ONLINE_FIX_LAUNCH_OPTIONS).expect("add bar");
+
+    let data = std::fs::read(&vdf_path).expect("read vdf");
+
+    assert_eq!(crate::test_support::top_level_keys(&data), vec![String::from("shortcuts")]);
+
+    assert_eq!(crate::test_support::keys_under(&data, "shortcuts").len(), 2);
 
 }

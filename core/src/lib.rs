@@ -10,8 +10,6 @@ use std::io::Read;
 
 use std::io::Write;
 
-use std::path::Path;
-
 pub(crate) const HOME_FIXTURE: &[u8] = include_bytes!("../tests/fixtures/home.html");
 
 pub(crate) const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 FIXED/0.1";
@@ -77,12 +75,16 @@ mod asset_download;
 mod assets;
 mod compat_tool;
 mod extract;
+mod game_exe;
 mod http;
 mod parsers;
+mod shortcut_add;
+mod shortcut_id;
+mod shortcut_lookup;
 mod site;
-mod steam;
 mod steam_remove;
 mod store_items;
+mod vdf;
 
 #[cfg(test)]
 mod test_support;
@@ -91,11 +93,15 @@ pub use asset_download::*;
 pub use assets::*;
 pub use compat_tool::*;
 pub use extract::*;
+pub use game_exe::*;
 pub use http::*;
 pub use parsers::*;
+pub use shortcut_add::*;
+pub use shortcut_id::*;
+pub use shortcut_lookup::*;
 pub use site::*;
-pub use steam::*;
 pub use steam_remove::*;
+pub(crate) use vdf::*;
 
 #[derive(Serialize)]
 

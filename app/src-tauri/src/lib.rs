@@ -3,14 +3,18 @@ use librqbit::Session;
 use librqbit::SessionOptions;
 
 mod commands;
+mod game_process;
 mod helpers;
 mod lane;
 mod launch;
+mod launch_monitor;
 mod launch_progress;
 mod library;
 mod pipeline_http;
+mod plugin;
 mod steam_client;
 mod steam_ipc;
+mod steam_root;
 mod pipeline_torrent;
 mod state;
 
@@ -24,6 +28,7 @@ pub use launch::*;
 pub use library::*;
 pub use pipeline_http::*;
 pub use pipeline_torrent::*;
+pub use plugin::*;
 pub use state::*;
 
 // WebKitGTK's dmabuf path fails on hybrid/NVIDIA setups ("Failed to create GBM buffer") and the

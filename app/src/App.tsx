@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
-
-import { getVersion } from "@tauri-apps/api/app";
 
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 
@@ -12,21 +10,23 @@ import { DownloadsView } from "./Downloads";
 
 import { LibraryView } from "./Library";
 
-import { DefenderModal, shouldShowDefenderModal } from "./components/DefenderModal";
+import { DefenderModal } from "./components/DefenderModal";
 
 import { Sidebar } from "./components/Sidebar";
 
 import { HomeView } from "./components/HomeView";
+
+import { TorrentOnlyModal } from "./components/TorrentOnlyModal";
+
+import { useAppLifecycle } from "./hooks/useAppLifecycle";
+
+import { useAppNavigation } from "./hooks/useAppNavigation";
 
 import { useCatalog } from "./hooks/useCatalog";
 
 import { useDownloads } from "./hooks/useDownloads";
 
 import { useInstalledGames } from "./hooks/useInstalledGames";
-
-import { useMouseBackNavigation } from "./hooks/useMouseBackNavigation";
-
-import { ensureInstalledTitlesLoaded } from "./lib/installedGames";
 
 import { viewVariants } from "./lib/motion";
 
@@ -36,89 +36,17 @@ import type { GameDetail } from "./types";
 
 import type { GameEntry } from "./types";
 
-import type { GamesPage } from "./types";
-
-import type { InstalledGame } from "./types";
-
-import type { View } from "./types";
-
 import "./App.css";
 
 export default function App() {
 
-  const [view, setView] = useState<View>("home");
-
-  const [selected, setSelected] = useState<GameEntry | null>(null);
-
-  const [detail, setDetail] = useState<GameDetail | null>(null);
-
-  const [detailBusy, setDetailBusy] = useState(false);
-
-  const [appVersion, setAppVersion] = useState("");
-
-  const [showDefender, setShowDefender] = useState(false);
-
   const catalog = useCatalog();
 
-  function openDetail(game: GameEntry) {
+  const { view, selected, setSelected, detail, detailBusy, openDetail, openInstalledDetail, switchView, setView } =
 
-    setSelected(game);
+    useAppNavigation(catalog);
 
-    setDetail(null);
-
-    setDetailBusy(true);
-
-    catalog.fetchDetail(game.pageUrl)
-
-      .then((result) => setDetail(result))
-
-      .finally(() => setDetailBusy(false));
-
-  }
-
-  function openInstalledDetail(game: InstalledGame) {
-
-    const searchKey = game.title.toLowerCase().replace(/[^a-z0-9]/g, "");
-
-    const loadedGame = catalog.visible.find(
-
-      (entry) => entry.title.toLowerCase().replace(/[^a-z0-9]/g, "") === searchKey,
-
-    );
-
-    if (loadedGame) {
-
-      openDetail(loadedGame);
-
-      return;
-
-    }
-
-    invoke<GamesPage>("find_games", { query: game.title })
-
-      .then((result) => {
-
-        const found = result.games.find(
-
-          (entry) => entry.title.toLowerCase().replace(/[^a-z0-9]/g, "") === searchKey,
-
-        ) ?? result.games[0];
-
-        if (found) {
-
-          openDetail(found);
-
-          return;
-
-        }
-
-        catalog.setError(`Could not find details for ${game.title}`);
-
-      })
-
-      .catch((reason: unknown) => catalog.setError(String(reason)));
-
-  }
+  const { appVersion, showDefender, setShowDefender } = useAppLifecycle(setSelected);
 
   const [torrentAsk, setTorrentAsk] = useState<{ game: GameEntry; detail: GameDetail } | null>(null);
 
@@ -137,34 +65,6 @@ export default function App() {
   });
 
   const library = useInstalledGames(view === "library");
-
-  useEffect(() => {
-
-    if (shouldShowDefenderModal()) {
-
-      setShowDefender(true);
-
-    }
-
-  }, []);
-
-  useEffect(() => {
-
-    getVersion()
-
-      .then((version) => setAppVersion(version))
-
-      .catch(() => setAppVersion(""));
-
-  }, []);
-
-  useEffect(() => {
-
-    ensureInstalledTitlesLoaded();
-
-  }, []);
-
-  useMouseBackNavigation(setSelected);
 
   function pickLane(lane: DownloadLane) {
 
@@ -191,18 +91,6 @@ export default function App() {
     }
 
     invoke("open_download_window", { url: lane.url }).catch((reason: unknown) => console.error(reason));
-
-  }
-
-  function switchView(target: View) {
-
-    setSelected(null);
-
-    catalog.setQuery("");
-
-    catalog.setSearchTerm("");
-
-    setView(target);
 
   }
 
@@ -350,57 +238,25 @@ export default function App() {
 
       />
 
-      {torrentAsk && (
+      <TorrentOnlyModal
 
-        <div className="modal-backdrop" onClick={() => setTorrentAsk(null)}>
+        torrentAsk={torrentAsk}
 
-          <div className="modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+        onCancel={() => setTorrentAsk(null)}
 
-            <h2>Torrent is the only lane</h2>
+        onConfirm={() => {
 
-            <p className="modal-hint">
+          if (torrentAsk) {
 
-              {torrentAsk.game.title} has no HTTP mirror right now. The torrent lane works, but some
+            downloads.startTorrent(torrentAsk.game, torrentAsk.detail);
 
-              ISPs monitor torrent swarms and may flag your connection.
+            setTorrentAsk(null);
 
-            </p>
+          }
 
-            <div className="modal-actions">
+        }}
 
-              <button type="button" className="ghost" onClick={() => setTorrentAsk(null)}>
-
-                Cancel
-
-              </button>
-
-              <button
-
-                type="button"
-
-                className="hero-cta"
-
-                onClick={() => {
-
-                  downloads.startTorrent(torrentAsk.game, torrentAsk.detail);
-
-                  setTorrentAsk(null);
-
-                }}
-
-              >
-
-                Download via torrent
-
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
+      />
 
       </main>
 
