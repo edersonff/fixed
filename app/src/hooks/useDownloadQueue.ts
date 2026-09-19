@@ -36,7 +36,11 @@ export function useDownloadQueue() {
 
               ? "error"
 
-              : "torrenting";
+              : state === "stopped"
+
+                ? "stopped"
+
+                : "torrenting";
 
       if (mapped === "ready") {
 
@@ -54,7 +58,7 @@ export function useDownloadQueue() {
 
           }
 
-          if (mapped === "torrenting" && (entry.state === "extracting" || entry.state === "ready")) {
+          if (mapped === "torrenting" && entry.state !== "torrenting" && entry.state !== "resolving") {
 
             return entry;
 

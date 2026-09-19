@@ -92,6 +92,16 @@ export type ProgressPayload = {
 
 };
 
+export type LaunchProgressPayload = {
+
+  title: string;
+
+  phase: string;
+
+  detail: string;
+
+};
+
 export type InstalledGame = {
 
   title: string;

@@ -22,7 +22,19 @@ export const microTransition: Transition = { duration: DUR_MICRO, ease: EASE_STA
 
 export const liftOnHover = { y: -2, transition: microTransition } as const;
 
-export const pressDown = { scale: 0.97, transition: { duration: 0.06, ease: EASE_STANDARD } } as const;
+export const pressDown = { scale: 0.96, transition: { duration: DUR_SHORT, ease: EASE_STANDARD } } as const;
+
+export const actionHover = {
+
+  scale: 1.04,
+
+  boxShadow: "0 0 0 1px rgba(198, 255, 74, .12), 0 12px 30px rgba(198, 255, 74, .2)",
+
+  transition: { type: "spring", stiffness: 320, damping: 20 },
+
+} as const;
+
+export const actionPressDown = { scale: 0.96, transition: { duration: DUR_SHORT, ease: EASE_STANDARD } } as const;
 
 const enter = (delay: number): Transition => ({ duration: DUR_MED, delay, ease: EASE_DECEL });
 

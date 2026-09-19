@@ -36,6 +36,10 @@ import type { GameDetail } from "./types";
 
 import type { GameEntry } from "./types";
 
+import type { GamesPage } from "./types";
+
+import type { InstalledGame } from "./types";
+
 import type { View } from "./types";
 
 import "./App.css";
@@ -69,6 +73,50 @@ export default function App() {
       .then((result) => setDetail(result))
 
       .finally(() => setDetailBusy(false));
+
+  }
+
+  function openInstalledDetail(game: InstalledGame) {
+
+    const searchKey = game.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    const loadedGame = catalog.visible.find(
+
+      (entry) => entry.title.toLowerCase().replace(/[^a-z0-9]/g, "") === searchKey,
+
+    );
+
+    if (loadedGame) {
+
+      openDetail(loadedGame);
+
+      return;
+
+    }
+
+    invoke<GamesPage>("find_games", { query: game.title })
+
+      .then((result) => {
+
+        const found = result.games.find(
+
+          (entry) => entry.title.toLowerCase().replace(/[^a-z0-9]/g, "") === searchKey,
+
+        ) ?? result.games[0];
+
+        if (found) {
+
+          openDetail(found);
+
+          return;
+
+        }
+
+        catalog.setError(`Could not find details for ${game.title}`);
+
+      })
+
+      .catch((reason: unknown) => catalog.setError(String(reason)));
 
   }
 
@@ -259,6 +307,10 @@ export default function App() {
             refresh={library.refresh}
 
             onBrowse={() => switchView("home")}
+
+            onOpenDetail={openInstalledDetail}
+
+            onUninstalled={library.refresh}
 
           />
 

@@ -18,7 +18,7 @@ import type { DownloadLane } from "../types";
 
 import type { GameDetail } from "../types";
 
-import { liftOnHover, pressDown } from "../lib/motion";
+import { actionHover, actionPressDown, liftOnHover } from "../lib/motion";
 
 export function DetailLanes({
 
@@ -78,13 +78,17 @@ export function DetailLanes({
 
           disabled={installed ? launching : !detail || detail.lanes.length === 0}
 
-          whileHover={liftOnHover}
+          whileHover={actionHover}
 
-          whileTap={pressDown}
+          whileTap={actionPressDown}
 
         >
 
-          {installed ? <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
+          <span className="action-icon">
+
+            {installed ? <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
+
+          </span>
 
           {installed ? (launching ? "Starting" : "Play") : "Download"}
 

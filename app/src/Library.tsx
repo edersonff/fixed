@@ -20,6 +20,10 @@ export function LibraryView({
 
   onBrowse,
 
+  onOpenDetail,
+
+  onUninstalled,
+
 }: {
 
   games: InstalledGame[];
@@ -31,6 +35,10 @@ export function LibraryView({
   refresh: () => void;
 
   onBrowse: () => void;
+
+  onOpenDetail: (game: InstalledGame) => void;
+
+  onUninstalled: () => void;
 
 }) {
 
@@ -70,27 +78,51 @@ export function LibraryView({
 
   return (
 
-    <section className="rail-block">
+    <section className="library-shelf">
 
-      <div className="rail-head">
+      <header className="library-head">
 
-        <h2>Your Games</h2>
+        <div>
 
-        <button type="button" className="seeall" onClick={refresh} disabled={scanning}>
+          <p className="eyebrow">Your collection</p>
 
-          <RefreshCw size={14} strokeWidth={2} />
+          <h1>Library</h1>
 
-          Rescan
+        </div>
 
-        </button>
+        <div className="library-head-actions">
 
-      </div>
+          <span className="library-count">{games.length} {games.length === 1 ? "game" : "games"}</span>
+
+          <button type="button" className="seeall" onClick={refresh} disabled={scanning}>
+
+            <RefreshCw size={14} strokeWidth={2} />
+
+            Rescan
+
+          </button>
+
+        </div>
+
+      </header>
 
       <div className="lib-grid">
 
-        {games.map((game) => (
+        {games.map((game, index) => (
 
-          <LibraryCard key={game.folder} game={game} />
+          <LibraryCard
+
+            key={game.folder}
+
+            game={game}
+
+            index={index}
+
+            onOpenDetail={onOpenDetail}
+
+            onUninstalled={onUninstalled}
+
+          />
 
         ))}
 

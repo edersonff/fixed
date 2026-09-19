@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
+import { refreshInstalledTitles } from "../lib/installedGames";
+
 import type { InstalledGame } from "../types";
 
 export function useInstalledGames(active: boolean) {
@@ -20,7 +22,13 @@ export function useInstalledGames(active: boolean) {
 
     invoke<InstalledGame[]>("installed_games")
 
-      .then((result) => setGames(result))
+      .then((result) => {
+
+        setGames(result);
+
+        refreshInstalledTitles();
+
+      })
 
       .catch((reason: unknown) => setError(String(reason)))
 

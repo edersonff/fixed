@@ -44,9 +44,9 @@ export function DownloadEntryCard({
 
   return (
 
-    <motion.article
+    <motion.div
 
-      className="queue-card"
+      className="queue-reveal"
 
       layout
 
@@ -59,6 +59,12 @@ export function DownloadEntryCard({
       exit="exit"
 
       custom={index}
+
+    >
+
+      <article
+
+      className="queue-card"
 
     >
 
@@ -126,7 +132,9 @@ export function DownloadEntryCard({
 
       </motion.button>
 
-    </motion.article>
+      </article>
+
+    </motion.div>
 
   );
 

@@ -22,7 +22,7 @@ import { prettyCategory } from "../lib/format";
 
 import { fadeRiseVariants } from "../lib/motion";
 
-import { liftOnHover, pressDown } from "../lib/motion";
+import { actionHover, actionPressDown } from "../lib/motion";
 
 function GameCardBase({
 
@@ -66,9 +66,9 @@ function GameCardBase({
 
   return (
 
-    <motion.article
+    <motion.div
 
-      className="card"
+      className="card-reveal"
 
       variants={fadeRiseVariants}
 
@@ -79,6 +79,12 @@ function GameCardBase({
       exit="exit"
 
       custom={index}
+
+    >
+
+      <article
+
+        className="card"
 
       role="button"
 
@@ -132,11 +138,11 @@ function GameCardBase({
 
             type="button"
 
-            className="quick-dl"
+            className="quick-dl action-button"
 
-            whileHover={liftOnHover}
+            whileHover={actionHover}
 
-            whileTap={pressDown}
+            whileTap={actionPressDown}
 
             disabled={installed ? launching : quickBusy}
 
@@ -158,7 +164,11 @@ function GameCardBase({
 
           >
 
-            {installed ? <Play size={14} strokeWidth={2.4} /> : <Download size={14} strokeWidth={2.4} />}
+            <span className="action-icon">
+
+              {installed ? <Play size={15} strokeWidth={2.4} /> : <Download size={15} strokeWidth={2.4} />}
+
+            </span>
 
             {installed ? (launching ? "Starting" : "Play") : "Get"}
 
@@ -182,7 +192,9 @@ function GameCardBase({
 
       </div>
 
-    </motion.article>
+      </article>
+
+    </motion.div>
 
   );
 
