@@ -87,7 +87,9 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 
 .modal-steps { display: grid; gap: 8px; margin: 2px 0 4px; padding: 14px 16px 14px 34px; border: 1px solid var(--line); border-radius: 12px; background: rgba(9, 12, 16, 0.45); color: var(--text); font-size: 12.5px; line-height: 1.4; }
 
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 2px; }
+.modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 2px; }
+
+.modal-actions .hero-cta { margin-top: 0; min-width: 0; }
 
 .content { min-width: 0; padding: 24px 24px 22px; overflow-y: auto; scrollbar-color: var(--elevated) transparent; scrollbar-width: thin; -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 34px), transparent 100%); background: radial-gradient(circle at 76% 12%, rgba(198, 255, 74, .055), transparent 28%), var(--bg); }
 .content::-webkit-scrollbar { width: 10px; }
