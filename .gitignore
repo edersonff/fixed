@@ -8,3 +8,7 @@ target/
 .claude/
 app/.claude/
 *.bak-*
+
+AGENTS.md
+CLAUDE.md
+old/
