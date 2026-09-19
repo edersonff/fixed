@@ -10,6 +10,7 @@ mod launch_progress;
 mod library;
 mod pipeline_http;
 mod steam_client;
+mod steam_ipc;
 mod pipeline_torrent;
 mod state;
 

@@ -1,5 +1,7 @@
 use crate::*;
 
+pub const ONLINE_FIX_DLL_OVERRIDES: &str = "winhttp=n,b;WINMM=n,b;SteamOverlay64=n,b;steam_api64=n,b";
+
 pub const ONLINE_FIX_LAUNCH_OPTIONS: &str = "WINEDLLOVERRIDES=\"winhttp=n,b;WINMM=n,b;SteamOverlay64=n,b;steam_api64=n,b\" %command%";
 
 pub fn shortcut_appid(exe_path: &str, app_name: &str) -> u32 {
@@ -18,6 +20,15 @@ pub fn shortcut_appid(exe_path: &str, app_name: &str) -> u32 {
 
 }
 
+// `steam://rungameid` wants the 64-bit shortcut gameid, never the 32-bit appid stored in the vdf.
+// Measured 2026-09-19: the 32-bit form returns "Game configuration unavailable"; the 64-bit form
+// launches through `reaper SteamLaunch AppId=... -- SteamLinuxRuntime_4/_v2-entry-point -- proton`.
+pub fn shortcut_gameid(appid: u32) -> u64 {
+
+    ((appid as u64) << 32) | 0x0200_0000
+
+}
+
 pub fn find_shortcut_appid(vdf_path: &str, app_name: &str) -> Option<u32> {
 
     let data = std::fs::read(vdf_path).ok()?;
@@ -27,6 +38,45 @@ pub fn find_shortcut_appid(vdf_path: &str, app_name: &str) -> Option<u32> {
     let found = find_subslice(&data, &name_marker, 0)?;
 
     let seg_start = found.saturating_sub(160);
+    let seg = &data[seg_start..found];
+
+    let marker = b"\x02appid\x00";
+
+    let idx = find_subslice(seg, marker, 0)?;
+
+    let value_start = idx + marker.len();
+
+    if value_start + 4 > seg.len() {
+
+        return None;
+
+    }
+
+    let bytes: [u8; 4] = [
+
+        seg[value_start],
+
+        seg[value_start + 1],
+
+        seg[value_start + 2],
+
+        seg[value_start + 3],
+
+    ];
+
+    Some(u32::from_le_bytes(bytes))
+
+}
+
+pub fn find_shortcut_appid_by_exe(vdf_path: &str, exe_path: &str) -> Option<u32> {
+
+    let data = std::fs::read(vdf_path).ok()?;
+
+    let exe_marker = vdf_string("Exe", &format!("\"{}\"", exe_path));
+
+    let found = find_subslice(&data, &exe_marker, 0)?;
+
+    let seg_start = found.saturating_sub(320);
 
     let seg = &data[seg_start..found];
 
@@ -58,7 +108,7 @@ pub fn find_shortcut_appid(vdf_path: &str, app_name: &str) -> Option<u32> {
 
 }
 
-fn vdf_string(key: &str, value: &str) -> Vec<u8> {
+pub(crate) fn vdf_string(key: &str, value: &str) -> Vec<u8> {
 
     let mut out = vec![1u8];
 
@@ -88,17 +138,17 @@ fn vdf_int(key: &str, value: u32) -> Vec<u8> {
 
 }
 
-fn entry_index_at(data: &[u8], marker_start: usize) -> Option<u32> {
+// Shared by `max_entry_index` (forward scan while writing) and `remove_steam_shortcut` (locating
+// the header of the entry being deleted) so the digit-run boundary rule lives in exactly one place.
+pub(crate) fn digits_before(data: &[u8], end: usize) -> Option<usize> {
 
-    let digits_end = marker_start.checked_sub(1)?;
-
-    if data.get(digits_end)? != &0u8 {
+    if data.get(end)? != &0u8 {
 
         return None;
 
     }
 
-    let mut start = digits_end;
+    let mut start = end;
 
     while start > 0 && data[start - 1].is_ascii_digit() {
 
@@ -106,11 +156,21 @@ fn entry_index_at(data: &[u8], marker_start: usize) -> Option<u32> {
 
     }
 
-    if start == digits_end || start == 0 || data[start - 1] != 0u8 {
+    if start == end || start == 0 || data[start - 1] != 0u8 {
 
         return None;
 
     }
+
+    Some(start)
+
+}
+
+fn entry_index_at(data: &[u8], marker_start: usize) -> Option<u32> {
+
+    let digits_end = marker_start.checked_sub(1)?;
+
+    let start = digits_before(data, digits_end)?;
 
     std::str::from_utf8(&data[start..digits_end]).ok()?.parse().ok()
 
@@ -144,7 +204,7 @@ fn max_entry_index(data: &[u8]) -> u32 {
 
 }
 
-fn find_subslice(haystack: &[u8], needle: &[u8], from: usize) -> Option<usize> {
+pub(crate) fn find_subslice(haystack: &[u8], needle: &[u8], from: usize) -> Option<usize> {
 
     if needle.is_empty() || from >= haystack.len() {
 
@@ -252,7 +312,7 @@ pub fn find_game_exe(folder: &str) -> Option<String> {
 
 // shortcuts.vdf holds every shortcut the user ever made by hand; a bad write loses all of them and
 // Steam offers no undo. The rollback copy is written before the mutation or the mutation is refused.
-fn backup_vdf(vdf_path: &str, original: &[u8]) -> Result<(), String> {
+pub(crate) fn backup_vdf(vdf_path: &str, original: &[u8]) -> Result<(), String> {
 
     let backup_path = format!("{}.bak-fixed", vdf_path);
 
@@ -268,21 +328,19 @@ pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_
 
     let name_marker = vdf_string("AppName", app_name);
 
-    if let Some(found) = find_subslice(&data, &name_marker, 0) {
+    if find_subslice(&data, &name_marker, 0).is_some() {
 
-        if let Some(index) = find_subslice(&data, b"\x02appid\x00", found.saturating_sub(64))
+        if let Some(appid) = find_shortcut_appid(vdf_path, app_name) {
 
-            .and_then(|marker| entry_index_at(&data, marker))
-
-        {
-
-            return Ok(index);
+            return Ok(appid);
 
         }
 
     }
 
     let index = max_entry_index(&data) + 1;
+
+    let appid = shortcut_appid(exe_path, app_name);
 
     let mut entry: Vec<u8> = Vec::new();
 
@@ -292,7 +350,7 @@ pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_
 
     entry.push(0);
 
-    entry.extend_from_slice(&vdf_int("appid", shortcut_appid(exe_path, app_name)));
+    entry.extend_from_slice(&vdf_int("appid", appid));
 
     entry.extend_from_slice(&vdf_string("AppName", app_name));
 
@@ -360,7 +418,7 @@ pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_
 
     }
 
-    Ok(index)
+    Ok(appid)
 
 }
 
