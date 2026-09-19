@@ -738,6 +738,7 @@ dependencies = [
  "librqbit",
  "scraper",
  "serde",
+ "serde_json",
  "tempfile",
  "tokio",
  "ureq",

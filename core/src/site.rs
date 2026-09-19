@@ -3,6 +3,58 @@ use crate::HOME_FIXTURE;
 use crate::GameDetail;
 use crate::*;
 
+use std::time::SystemTime;
+
+const CATALOG_TTL_SECS: u64 = 600;
+
+fn catalog_cache_path(page: u32) -> Option<String> {
+
+    let home = std::env::var("HOME").ok()?;
+
+    Some(format!("{}/.cache/fixed/catalog-{}.json", home, page))
+
+}
+
+fn read_cached_catalog(page: u32) -> Option<GamesPage> {
+
+    let path = catalog_cache_path(page)?;
+
+    let bytes = std::fs::read(&path).ok()?;
+
+    let age = SystemTime::now().duration_since(std::fs::metadata(&path).ok()?.modified().ok()?).ok()?.as_secs();
+
+    if age > CATALOG_TTL_SECS {
+
+        return None;
+
+    }
+
+    serde_json::from_slice::<GamesPage>(&bytes).ok()
+
+}
+
+fn write_cached_catalog(page: u32, cached: &GamesPage) {
+
+    let Some(path) = catalog_cache_path(page) else {
+
+        return;
+
+    };
+
+    if let Some(dir) = std::path::Path::new(&path).parent() {
+
+        let _ = std::fs::create_dir_all(dir);
+
+    }
+
+    if let Ok(bytes) = serde_json::to_vec(cached) {
+
+        let _ = std::fs::write(&path, bytes);
+
+    }
+
+}
+
 pub fn home_games(page: u32) -> GamesPage {
 
     let url = if page <= 1 {
@@ -17,9 +69,31 @@ pub fn home_games(page: u32) -> GamesPage {
 
     match fetch_cp1251(&url) {
 
-        Ok(bytes) => GamesPage { source: String::from("live"), games: parse_home(&decode_cp1251(&bytes)) },
+        Ok(bytes) => {
 
-        Err(_) => GamesPage { source: String::from("fixture"), games: parse_home(&decode_cp1251(HOME_FIXTURE)) },
+            let live = GamesPage { source: String::from("live"), games: parse_home(&decode_cp1251(&bytes)) };
+
+            if !live.games.is_empty() {
+
+                write_cached_catalog(page, &live);
+
+            }
+
+            live
+
+        }
+
+        Err(_) => {
+
+            if let Some(cached) = read_cached_catalog(page) {
+
+                return GamesPage { source: String::from("cache"), games: cached.games };
+
+            }
+
+            GamesPage { source: String::from("fixture"), games: parse_home(&decode_cp1251(HOME_FIXTURE)) }
+
+        }
 
     }
 

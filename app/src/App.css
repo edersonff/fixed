@@ -130,7 +130,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .seeall:hover { box-shadow: 0 8px 18px rgba(0, 0, 0, .2); color: var(--text); transform: translateY(-2px); }
 .rail, .grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-top: 11px; }
 .card-reveal, .lib-card-reveal, .queue-reveal { min-width: 0; }
-.card { min-width: 0; cursor: pointer; transition: transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
+.card { min-width: 0; cursor: pointer; content-visibility: auto; contain-intrinsic-size: auto 340px; transition: transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
 .card:hover { box-shadow: 0 8px 20px rgba(0, 0, 0, .18); transform: translateY(-2px); }
 .poster { position: relative; display: block; aspect-ratio: 2 / 3; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--elevated); transition: border-color var(--dur-micro) var(--ease-standard); }
 .poster > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; transform: scale(1.03); transition: transform var(--dur-micro) var(--ease-standard), filter var(--dur-micro) var(--ease-standard); }

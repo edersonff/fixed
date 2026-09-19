@@ -14,7 +14,7 @@ pub(crate) const HOME_FIXTURE: &[u8] = include_bytes!("../tests/fixtures/home.ht
 
 pub(crate) const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 FIXED/0.1";
 
-#[derive(Serialize)]
+#[derive(Serialize, serde::Deserialize)]
 
 #[serde(rename_all = "camelCase")]
 
@@ -103,7 +103,7 @@ pub use site::*;
 pub use steam_remove::*;
 pub(crate) use vdf::*;
 
-#[derive(Serialize)]
+#[derive(Serialize, serde::Deserialize)]
 
 #[serde(rename_all = "camelCase")]
 

@@ -42,13 +42,11 @@ const leave = (duration: number): Transition => ({ duration, ease: EASE_ACCEL })
 
 export const fadeRiseVariants: Variants = {
 
-  hidden: { opacity: 0, filter: "blur(8px)", y: 10 },
+  hidden: { opacity: 0, y: 10 },
 
   visible: (index = 0) => ({
 
     opacity: 1,
-
-    filter: "blur(0px)",
 
     y: 0,
 
@@ -59,8 +57,6 @@ export const fadeRiseVariants: Variants = {
   exit: {
 
     opacity: 0,
-
-    filter: "blur(8px)",
 
     y: 10,
 
@@ -77,8 +73,6 @@ export const heroVariants: Variants = {
   visible: (index = 0) => ({
 
     opacity: 1,
-
-    filter: "blur(0px)",
 
     y: 0,
 
@@ -120,13 +114,11 @@ export const heroArtVariants: Variants = {
 
 export const detailItemVariants: Variants = {
 
-  hidden: { opacity: 0, filter: "blur(8px)", y: 10 },
+  hidden: { opacity: 0, y: 10 },
 
   visible: (index = 0) => ({
 
     opacity: 1,
-
-    filter: "blur(0px)",
 
     y: 0,
 
@@ -138,23 +130,21 @@ export const detailItemVariants: Variants = {
 
 export const stateVariants: Variants = {
 
-  hidden: { opacity: 0, filter: "blur(6px)", y: 6 },
+  hidden: { opacity: 0, y: 6 },
 
-  visible: { opacity: 1, filter: "blur(0px)", y: 0, transition: { duration: DUR_SHORT, ease: EASE_DECEL } },
+  visible: { opacity: 1, y: 0, transition: { duration: DUR_SHORT, ease: EASE_DECEL } },
 
-  exit: { opacity: 0, filter: "blur(6px)", y: -4, transition: leave(DUR_MICRO) },
+  exit: { opacity: 0, y: -4, transition: leave(DUR_MICRO) },
 
 };
 
 export const queueVariants: Variants = {
 
-  hidden: { opacity: 0, filter: "blur(8px)", y: 10 },
+  hidden: { opacity: 0, y: 10 },
 
   visible: (index = 0) => ({
 
     opacity: 1,
-
-    filter: "blur(0px)",
 
     y: 0,
 
@@ -162,19 +152,17 @@ export const queueVariants: Variants = {
 
   }),
 
-  exit: { opacity: 0, filter: "blur(8px)", y: 10, transition: leave(DUR_SHORT) },
+  exit: { opacity: 0, y: 10, transition: leave(DUR_SHORT) },
 
 };
 
 export const viewVariants: Variants = {
 
-  hidden: { opacity: 0, filter: "blur(6px)", scale: 0.995, y: 4 },
+  hidden: { opacity: 0, scale: 0.995, y: 4 },
 
   visible: (mode = "view") => ({
 
     opacity: 1,
-
-    filter: "blur(0px)",
 
     scale: 1,
 

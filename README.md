@@ -5,7 +5,7 @@ Desktop client for [online-fix.me](https://online-fix.me): browse, download, ext
 [![CI](https://github.com/edersonff/fixed/actions/workflows/ci.yml/badge.svg)](https://github.com/edersonff/fixed/actions/workflows/ci.yml)
 [![Release](https://github.com/edersonff/fixed/actions/workflows/release.yml/badge.svg)](https://github.com/edersonff/fixed/releases)
 
-![FIXED home](docs/screenshots/home.png)
+![FIXED home](docs/screenshots/home.webp)
 
 ## What it does
 
@@ -17,7 +17,7 @@ One pipeline, end to end. You click Download once, FIXED does the rest:
 4. **Play** · one click launches the game through Steam.
 5. **Plugins** · drop a BepInEx zip; Fix Repair is reapplied on top automatically.
 
-![Game detail](docs/screenshots/detail.png)
+![Game detail](docs/screenshots/detail.webp)
 
 ## Features
 
@@ -27,7 +27,7 @@ One pipeline, end to end. You click Download once, FIXED does the rest:
 - Downloads queue with progress, lane badge, Stop all while active, Play and Add plugin when ready.
 - Tauri v2 + Rust core: scraper, torrent engine and HTTP downloader run natively.
 
-![Downloads ready](docs/screenshots/downloads-ready.png)
+![Downloads ready](docs/screenshots/downloads-ready.webp)
 
 ## Install
 

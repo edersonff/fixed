@@ -25,3 +25,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -f "v$VERSION" HEAD
           git push -f origin "v$VERSION"
+      # A tag pushed with GITHUB_TOKEN does not fire tag-triggered workflows (GitHub loop
+      # protection), so the release is started explicitly; workflow_dispatch passes the token.
+      - name: Trigger release build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c "import json; print(json.load(open('app/src-tauri/tauri.conf.json'))['version'])")
+          gh workflow run release.yml --ref "v$VERSION"
