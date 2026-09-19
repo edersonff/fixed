@@ -215,6 +215,18 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .play { min-height: 48px; height: 48px; background: var(--lime); color: #10130c; }
 .play:hover { background: var(--lime-soft); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; }
+
+.press-lift { transition: transform var(--dur-micro) var(--ease-standard); }
+
+.press-lift:hover { transform: translateY(-2px); }
+
+.press-lift:active { transform: translateY(-1px) scale(0.97); }
+
+.press-action { transition: transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
+
+.press-action:hover { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(198, 255, 74, .12), 0 12px 30px rgba(198, 255, 74, .2); }
+
+.press-action:active { transform: scale(0.96); }
 .ghost:hover { border-color: rgba(213, 225, 237, .3); box-shadow: 0 8px 20px rgba(0, 0, 0, .22); color: var(--text); transform: translateY(-2px); }
 .plugin-note { margin-top: 8px; color: var(--lime) !important; font-size: var(--size-meta); font-weight: 600; }
 

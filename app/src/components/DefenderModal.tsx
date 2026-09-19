@@ -6,7 +6,6 @@ import { ShieldAlert } from "lucide-react";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 
-import { liftOnHover, pressDown } from "../lib/motion";
 
 const STEPS = [
 
@@ -100,11 +99,8 @@ export function DefenderModal({ open, onClose }: { open: boolean; onClose: () =>
 
                 type="button"
 
-                className="ghost"
+                className="press-lift ghost"
 
-                whileHover={liftOnHover}
-
-                whileTap={pressDown}
 
                 disabled={opening}
 
@@ -126,11 +122,8 @@ export function DefenderModal({ open, onClose }: { open: boolean; onClose: () =>
 
                 type="button"
 
-                className="hero-cta"
+                className="press-lift hero-cta"
 
-                whileHover={liftOnHover}
-
-                whileTap={pressDown}
 
                 onClick={onClose}
 

@@ -24,7 +24,7 @@ import { usePluginInstall } from "../hooks/usePluginInstall";
 
 import { diskSize, displayTitle } from "../lib/format";
 
-import { fadeRiseVariants, liftOnHover, pressDown } from "../lib/motion";
+import { fadeRiseVariants } from '../lib/motion';
 
 import type { InstalledGame } from "../types";
 
@@ -132,13 +132,10 @@ export function LibraryCard({
 
               type="button"
 
-              className="lib-uninstall"
+              className="press-lift lib-uninstall"
 
               aria-label={`Uninstall ${displayTitle(game.title)}`}
 
-              whileHover={liftOnHover}
-
-              whileTap={pressDown}
 
               onClick={(event) => {
 

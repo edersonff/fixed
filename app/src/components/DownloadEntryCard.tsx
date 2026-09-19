@@ -16,7 +16,6 @@ import { queueVariants } from "../lib/motion";
 
 import type { DownloadEntry } from "../types";
 
-import { liftOnHover, pressDown } from "../lib/motion";
 
 export function DownloadEntryCard({
 
@@ -116,13 +115,10 @@ export function DownloadEntryCard({
 
         type="button"
 
-        className="queue-cancel"
+        className="press-lift queue-cancel"
 
         aria-label={`Cancel ${entry.game.title}`}
 
-        whileHover={liftOnHover}
-
-        whileTap={pressDown}
 
         onClick={() => onCancel(entry)}
 

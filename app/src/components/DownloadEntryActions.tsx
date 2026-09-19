@@ -8,7 +8,7 @@ import { useGameLaunch } from "../hooks/useGameLaunch";
 
 import { usePluginInstall } from "../hooks/usePluginInstall";
 
-import { EASE_POP, DUR_SHORT, actionHover, actionPressDown, liftOnHover, pressDown } from "../lib/motion";
+import { EASE_POP, DUR_SHORT, actionHover, actionPressDown } from '../lib/motion';
 
 export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; ready: boolean }) {
 
@@ -74,11 +74,8 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
               type="button"
 
-              className="ghost"
+              className="press-lift ghost"
 
-              whileHover={liftOnHover}
-
-              whileTap={pressDown}
 
               onClick={addPlugin}
 

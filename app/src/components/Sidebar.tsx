@@ -8,7 +8,6 @@ import { LibraryBig } from "lucide-react";
 
 import type { View } from "../types";
 
-import { liftOnHover, pressDown } from "../lib/motion";
 
 const NAV: Array<{ id: View; label: string; Icon: typeof Home }> = [
 
@@ -74,11 +73,7 @@ export function Sidebar({
 
             title={label}
 
-            className={view === id && !hasSelection ? "nav-item active" : "nav-item"}
-
-            whileHover={liftOnHover}
-
-            whileTap={pressDown}
+            className={view === id && !hasSelection ? "nav-item active press-lift" : "nav-item press-lift"}
 
             onClick={() => onSwitchView(id)}
 

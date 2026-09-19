@@ -12,7 +12,6 @@ import type { GameDetail } from "../types";
 
 import type { GameEntry } from "../types";
 
-import { liftOnHover, pressDown } from "../lib/motion";
 
 export function HomeCatalog({
 
@@ -134,13 +133,10 @@ export function HomeCatalog({
 
           type="button"
 
-          className="loadmore"
+          className="press-lift loadmore"
 
           disabled={busy}
 
-          whileHover={liftOnHover}
-
-          whileTap={pressDown}
 
           onClick={() => loadPage(page + 1)}
 

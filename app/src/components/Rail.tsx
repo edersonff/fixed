@@ -8,7 +8,6 @@ import type { GameEntry } from "../types";
 
 import { GameCard } from "./GameCard";
 
-import { liftOnHover, pressDown } from "../lib/motion";
 
 function RailBase({
 
@@ -62,11 +61,8 @@ function RailBase({
 
           type="button"
 
-          className="seeall"
+          className="press-lift seeall"
 
-          whileHover={liftOnHover}
-
-          whileTap={pressDown}
 
           onClick={onSeeAll}
 

@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 
 import { Play } from "lucide-react";
 
-import { liftOnHover } from "../lib/motion";
 
 export function DetailReview({
 
@@ -44,11 +43,9 @@ export function DetailReview({
 
         type="button"
 
-        className="review-card"
+        className="press-lift review-card"
 
         aria-label="Play the video review"
-
-        whileHover={liftOnHover}
 
         whileTap={{ scale: 0.99 }}
 

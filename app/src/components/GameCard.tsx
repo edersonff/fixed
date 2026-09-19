@@ -22,7 +22,6 @@ import { prettyCategory } from "../lib/format";
 
 import { fadeRiseVariants } from "../lib/motion";
 
-import { actionHover, actionPressDown } from "../lib/motion";
 
 function GameCardBase({
 
@@ -138,11 +137,7 @@ function GameCardBase({
 
             type="button"
 
-            className="quick-dl action-button"
-
-            whileHover={actionHover}
-
-            whileTap={actionPressDown}
+            className="quick-dl action-button press-action"
 
             disabled={installed ? launching : quickBusy}
 

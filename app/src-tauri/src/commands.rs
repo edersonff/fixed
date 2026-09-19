@@ -1,7 +1,4 @@
 use fix_core::discover_parts;
-use fix_core::fetch_detail;
-use fix_core::search_games;
-use fix_core::home_games;
 use crate::DownloadEngine;
 use crate::DownloadProgress;
 use tauri::Emitter;
@@ -19,23 +16,35 @@ pub(crate) fn prof_span<T>(label: &str, run: impl FnOnce() -> T) -> T {
 }
 
 #[tauri::command]
-pub fn list_games(page: u32) -> fix_core::GamesPage {
+pub async fn list_games(page: u32) -> Result<fix_core::GamesPage, String> {
 
-    prof_span("list_games", || home_games(page))
+    tauri::async_runtime::spawn_blocking(move || prof_span("list_games", || fix_core::home_games(page)))
 
-}
+        .await
 
-#[tauri::command]
-pub fn find_games(query: String) -> fix_core::GamesPage {
-
-    search_games(&query)
+        .map_err(|error| error.to_string())
 
 }
 
 #[tauri::command]
-pub fn game_detail(url: String) -> fix_core::GameDetail {
+pub async fn find_games(query: String) -> Result<fix_core::GamesPage, String> {
 
-    prof_span("game_detail", || fetch_detail(&url))
+    tauri::async_runtime::spawn_blocking(move || fix_core::search_games(&query))
+
+        .await
+
+        .map_err(|error| error.to_string())
+
+}
+
+#[tauri::command]
+pub async fn game_detail(url: String) -> Result<fix_core::GameDetail, String> {
+
+    tauri::async_runtime::spawn_blocking(move || prof_span("game_detail", || fix_core::fetch_detail(&url)))
+
+        .await
+
+        .map_err(|error| error.to_string())
 
 }
 
@@ -100,21 +109,35 @@ fn assets_debug_enabled() -> bool {
 
 #[tauri::command]
 
-pub fn game_assets(title: String) -> Option<fix_core::GameAssets> {
+pub async fn game_assets(title: String) -> Result<Option<fix_core::GameAssets>, String> {
 
-    let assets = prof_span("game_assets", || fix_core::game_assets(&title));
+    let log_title = title.clone();
 
-    if assets_debug_enabled() {
+    let debug = assets_debug_enabled();
 
-        if let Some(found) = &assets {
+    let assets = tauri::async_runtime::spawn_blocking(move || {
 
-            eprintln!("[ASSETS] {}: appid {} hero {}", title, found.appid, found.hero_url);
+        let found = prof_span("game_assets", || fix_core::game_assets(&title));
+
+        if debug {
+
+            if let Some(assets) = &found {
+
+                eprintln!("[ASSETS] {}: appid {} hero {}", log_title, assets.appid, assets.hero_url);
+
+            }
 
         }
 
-    }
+        found
 
-    assets
+    })
+
+    .await
+
+    .map_err(|error| error.to_string())?;
+
+    Ok(assets)
 
 }
 

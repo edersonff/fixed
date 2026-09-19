@@ -4,7 +4,6 @@ import { Puzzle } from "lucide-react";
 
 import { fadeRiseVariants } from "../lib/motion";
 
-import { liftOnHover, pressDown } from "../lib/motion";
 
 export function EmptyState({ title, hint, action, onAction }: { title: string; hint: string; action: string; onAction: () => void }) {
 
@@ -38,7 +37,7 @@ export function EmptyState({ title, hint, action, onAction }: { title: string; h
 
       </motion.p>
 
-      <motion.button type="button" whileHover={liftOnHover} whileTap={pressDown} onClick={onAction}>
+      <motion.button className="press-lift" type="button" onClick={onAction}>
 
         {action}
 
