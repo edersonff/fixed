@@ -206,8 +206,6 @@ export default function App() {
 
           <DownloadsView
 
-            entries={downloads.downloads}
-
             onBrowse={() => switchView("home")}
 
             onStopAll={downloads.stopAll}

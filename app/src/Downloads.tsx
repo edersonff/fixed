@@ -1,8 +1,14 @@
+import { useSyncExternalStore } from "react";
+
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Puzzle } from "lucide-react";
 
 import { DownloadEntryCard } from "./components/DownloadEntryCard";
+
+import { getDownloadEntries } from "./lib/downloadsStore";
+
+import { subscribeDownloads } from "./lib/downloadsStore";
 
 import { stateVariants } from "./lib/motion";
 
@@ -14,8 +20,6 @@ import { liftOnHover, pressDown } from "./lib/motion";
 
 export function DownloadsView({
 
-  entries,
-
   onBrowse,
 
   onStopAll,
@@ -24,8 +28,6 @@ export function DownloadsView({
 
 }: {
 
-  entries: DownloadEntry[];
-
   onBrowse: () => void;
 
   onStopAll: () => void;
@@ -33,6 +35,8 @@ export function DownloadsView({
   onCancel: (entry: DownloadEntry) => void;
 
 }) {
+
+  const entries = useSyncExternalStore(subscribeDownloads, getDownloadEntries);
 
   if (entries.length === 0) {
 

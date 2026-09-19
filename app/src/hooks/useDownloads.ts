@@ -4,6 +4,8 @@ import { useDownloadActions } from "./useDownloadActions";
 
 import { useDownloadQueue } from "./useDownloadQueue";
 
+import { getDownloadEntries } from "../lib/downloadsStore";
+
 import type { GameDetail } from "../types";
 
 import type { GameEntry } from "../types";
@@ -36,13 +38,13 @@ export function useDownloads({
 
 }) {
 
-  const { downloads, setDownloads } = useDownloadQueue();
+  const { setDownloads } = useDownloadQueue();
 
   const isBusy = useCallback(
 
     (pageUrl: string) =>
 
-      downloads.some(
+      getDownloadEntries().some(
 
         (entry) =>
 
@@ -52,12 +54,12 @@ export function useDownloads({
 
       ),
 
-    [downloads],
+    [],
 
   );
 
   const actions = useDownloadActions({ setDownloads, setView, setSelected, openDetail, onError, onTorrentOnly, isBusy });
 
-  return { downloads, ...actions };
+  return actions;
 
 }
