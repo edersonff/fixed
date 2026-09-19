@@ -1,4 +1,3 @@
-use crate::add_game_to_steam;
 use crate::find_shortcuts_vdf;
 
 #[tauri::command]
@@ -70,14 +69,99 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
 }
 
-#[tauri::command]
+// Steam is the only thing that can hand the game a real session: `reaper SteamLaunch AppId=...`
+// registers the process with the running client, which is what makes online-fix's replaced
+// steam_api64 find the client socket. A bare Proton wrapper starts the game with zero Steam env
+// (measured 2026-09-19: `grep -c "^Steam" /proc/<pid>/environ` = 0) and the networking — the whole
+// product — is silently dead. So we never launch the executable ourselves.
+//
+// Steam reads shortcuts.vdf and config.vdf only at startup and rewrites shortcuts.vdf from memory on
+// exit, so registering a game costs one client restart. `-silent` makes that restart invisible.
+pub(crate) fn steam_paths() -> Result<(String, std::path::PathBuf), String> {
 
-pub fn launch_game(title: String) -> Result<String, String> {
+    let vdf = find_shortcuts_vdf().ok_or_else(|| String::from("steam shortcuts.vdf not found"))?;
 
+    let root = crate::steam_client::steam_root().ok_or_else(|| String::from("steam root not found"))?;
 
-    let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
+    Ok((vdf, root))
 
-    let Some(exe) = fix_core::find_game_exe(&folder) else {
+}
+
+fn is_registered(title: &str) -> Result<bool, String> {
+
+    let (vdf, root) = steam_paths()?;
+
+    let Some(appid) = fix_core::find_shortcut_appid(&vdf, title) else {
+
+        return Ok(false);
+
+    };
+
+    Ok(fix_core::is_compat_tool_mapped(&root.to_string_lossy(), appid))
+
+}
+
+fn register(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<(), String> {
+
+    let was_running = crate::steam_client::is_steam_running();
+
+    if was_running {
+
+        crate::launch_progress::emit_progress(app, title, "stopping-steam", "");
+
+        crate::steam_client::shutdown()?;
+
+    }
+
+    crate::launch_progress::emit_progress(app, title, "registering", "");
+
+    crate::add_game_to_steam(title, folder);
+
+    let (vdf, root) = steam_paths()?;
+
+    let appid = fix_core::find_shortcut_appid(&vdf, title)
+
+        .ok_or_else(|| String::from("shortcut not found after write"))?;
+
+    fix_core::ensure_compat_tool(&root.to_string_lossy(), appid, fix_core::DEFAULT_COMPAT_TOOL)?;
+
+    eprintln!("[STEAM] {}: registered as appid {}", title, appid);
+
+    crate::launch_progress::emit_progress(app, title, "starting-steam", "");
+
+    crate::steam_client::start_silent()?;
+
+    Ok(())
+
+}
+
+fn ensure_registered_and_running(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<(), String> {
+
+    if !is_registered(title)? {
+
+        register(app, title, folder)?;
+
+    } else if !crate::steam_client::is_steam_running() {
+
+        crate::launch_progress::emit_progress(app, title, "starting-steam", "");
+
+        crate::steam_client::start_silent()?;
+
+    }
+
+    Ok(())
+
+}
+
+// `done` only means the URL reached Steam, never that the game process is up — nothing on this
+// side can observe the game itself starting.
+fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, String> {
+
+    crate::launch_progress::emit_progress(app, title, "checking", "");
+
+    let folder = crate::game_folder(title).ok_or_else(|| String::from("home dir not found"))?;
+
+    if fix_core::find_game_exe(&folder).is_none() {
 
         let message = format!("no game exe found in {}", folder);
 
@@ -85,82 +169,52 @@ pub fn launch_game(title: String) -> Result<String, String> {
 
         return Err(message);
 
-    };
+    }
 
-    let mut added_now = false;
+    ensure_registered_and_running(app, title, &folder)?;
 
-    if find_shortcuts_vdf().is_some() {
+    if !crate::launch_progress::wait_with_progress(app, title) {
 
-        added_now = add_game_to_steam(&title, &folder);
+        let message = String::from("steam did not come up");
 
-    } else {
+        eprintln!("[LAUNCH] {}: {}", title, message);
 
-        eprintln!("[LAUNCH] {}: steam shortcuts.vdf not found", title);
+        return Err(message);
 
     }
 
-    let appid = find_shortcuts_vdf()
+    crate::launch_progress::emit_progress(app, title, "launching", "");
 
-        .and_then(|vdf| fix_core::find_shortcut_appid(&vdf, &title))
+    let (vdf, _) = steam_paths()?;
 
-        .unwrap_or_else(|| fix_core::shortcut_appid(&exe, &title));
+    let appid = fix_core::find_shortcut_appid(&vdf, title)
 
-    let url = format!("steam://rungameid/{}", appid);
+        .ok_or_else(|| String::from("shortcut missing after register"))?;
 
-    #[cfg(windows)]
+    let url = format!("steam://rungameid/{}", fix_core::shortcut_gameid(appid));
 
-    let spawn_result = std::process::Command::new("cmd")
+    let pid = crate::steam_client::open_url(&url)?;
 
-        .args(["/C", "start", "", &url])
+    eprintln!("[LAUNCH] {}: {} (pid {})", title, url, pid);
 
-        .stdin(std::process::Stdio::null())
+    crate::launch_progress::emit_progress(app, title, "done", &url);
 
-        .stdout(std::process::Stdio::null())
+    Ok(format!("launched:{}", url))
 
-        .stderr(std::process::Stdio::null())
+}
 
-        .spawn();
+#[tauri::command]
 
-    #[cfg(not(windows))]
+pub fn launch_game(app: tauri::AppHandle, title: String) -> Result<String, String> {
 
-    let spawn_result = std::process::Command::new("xdg-open")
+    let result = run_launch(&app, &title);
 
-        .arg(&url)
+    if let Err(error) = &result {
 
-        .stdin(std::process::Stdio::null())
+        crate::launch_progress::emit_progress(&app, &title, "failed", error);
 
-        .stdout(std::process::Stdio::null())
+    }
 
-        .stderr(std::process::Stdio::null())
-
-        .spawn();
-
-    spawn_result
-
-        .map(|child| {
-
-            eprintln!("[LAUNCH] {}: {} (pid {})", title, url, child.id());
-
-            if added_now {
-
-                format!("launched:{};restart", url)
-
-            } else {
-
-                format!("launched:{}", url)
-
-            }
-
-        })
-
-        .map_err(|error| {
-
-            let message = format!("open steam url: {}", error);
-
-            eprintln!("[LAUNCH] {}: {}", title, message);
-
-            message
-
-        })
+    result
 
 }

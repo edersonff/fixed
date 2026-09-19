@@ -97,6 +97,117 @@ pub fn installed_games() -> Vec<InstalledGame> {
 
 }
 
+fn is_safe_title(title: &str) -> bool {
+
+    !title.is_empty() && !title.contains("..") && !title.contains('/') && !title.contains('\\')
+
+}
+
+// The folder is confirmed a real directory (not a symlink) by the caller before this runs;
+// canonicalize is what catches a games root reached through a different symlinked prefix.
+fn require_child_of_games_root(root: &std::path::Path, target: &std::path::Path) -> Result<(), String> {
+
+    let canonical_root = std::fs::canonicalize(root).map_err(|error| format!("canonicalize {}: {}", root.display(), error))?;
+
+    let canonical_target = std::fs::canonicalize(target).map_err(|error| format!("canonicalize {}: {}", target.display(), error))?;
+
+    if canonical_target.parent() != Some(canonical_root.as_path()) {
+
+        return Err(format!("refusing to delete outside games root: {}", target.display()));
+
+    }
+
+    Ok(())
+
+}
+
+fn resolve_uninstall_target(title: &str) -> Result<std::path::PathBuf, String> {
+
+    if !is_safe_title(title) {
+
+        return Err(format!("unsafe title: {}", title));
+
+    }
+
+    let root = games_root().ok_or_else(|| String::from("home dir not found"))?;
+
+    let target = root.join(title);
+
+    let meta = target.symlink_metadata().map_err(|_| format!("game folder not found: {}", target.display()))?;
+
+    if meta.file_type().is_symlink() {
+
+        return Err(format!("refusing to delete a symlink: {}", target.display()));
+
+    }
+
+    if !meta.is_dir() {
+
+        return Err(format!("game folder not found: {}", target.display()));
+
+    }
+
+    require_child_of_games_root(&root, &target)?;
+
+    Ok(target)
+
+}
+
+fn remove_steam_registration(title: &str) -> Result<Vec<String>, String> {
+
+    if crate::steam_client::is_steam_running() {
+
+        return Err(String::from("steam is running, close it before removing this game"));
+
+    }
+
+    let (vdf, root) = crate::launch::steam_paths()?;
+
+    let appid = fix_core::find_shortcut_appid(&vdf, title);
+
+    let mut removed = Vec::new();
+
+    if let Some(appid) = appid {
+
+        if fix_core::remove_compat_tool(&root.to_string_lossy(), appid)? {
+
+            removed.push(String::from("compat tool mapping"));
+
+        }
+
+    }
+
+    if fix_core::remove_steam_shortcut(&vdf, title)? {
+
+        removed.push(String::from("steam shortcut"));
+
+    }
+
+    Ok(removed)
+
+}
+
+#[tauri::command]
+pub fn uninstall_game(title: String, remove_from_steam: bool) -> Result<String, String> {
+
+    let target = resolve_uninstall_target(&title)?;
+
+    let mut removed = Vec::new();
+
+    if remove_from_steam {
+
+        removed = remove_steam_registration(&title)?;
+
+    }
+
+    std::fs::remove_dir_all(&target).map_err(|error| format!("remove {}: {}", target.display(), error))?;
+
+    removed.push(format!("game folder {}", target.display()));
+
+    Ok(removed.join(", "))
+
+}
+
 #[tauri::command]
 pub fn open_game_folder(folder: String) -> Result<(), String> {
 
@@ -119,3 +230,7 @@ pub fn open_game_folder(folder: String) -> Result<(), String> {
         .map_err(|error| format!("open {}: {}", folder, error))
 
 }
+
+#[cfg(test)]
+#[path = "library_tests.rs"]
+mod library_tests;
