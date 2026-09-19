@@ -32,11 +32,7 @@ pub fn find_shortcut_appid(vdf_path: &str, app_name: &str) -> Option<u32> {
 
     let marker = b"\x02appid\x00";
 
-    let pos = seg.len().saturating_sub(marker.len() + 4);
-
     let idx = find_subslice(seg, marker, 0)?;
-
-    let _ = pos;
 
     let value_start = idx + marker.len();
 
@@ -254,6 +250,18 @@ pub fn find_game_exe(folder: &str) -> Option<String> {
 
 }
 
+// shortcuts.vdf holds every shortcut the user ever made by hand; a bad write loses all of them and
+// Steam offers no undo. The rollback copy is written before the mutation or the mutation is refused.
+fn backup_vdf(vdf_path: &str, original: &[u8]) -> Result<(), String> {
+
+    let backup_path = format!("{}.bak-fixed", vdf_path);
+
+    std::fs::write(&backup_path, original)
+
+        .map_err(|error| format!("backup {}: {}", backup_path, error))
+
+}
+
 pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_dir: &str, launch_options: &str) -> Result<u32, String> {
 
     let data = std::fs::read(vdf_path).map_err(|error| format!("read {}: {}", vdf_path, error))?;
@@ -340,6 +348,8 @@ pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_
 
     out.push(8);
 
+    backup_vdf(vdf_path, &data)?;
+
     std::fs::write(vdf_path, &out).map_err(|error| format!("write {}: {}", vdf_path, error))?;
 
     let verify = std::fs::read(vdf_path).map_err(|error| format!("re-read {}: {}", vdf_path, error))?;
@@ -354,3 +364,6 @@ pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_
 
 }
 
+#[cfg(test)]
+#[path = "steam_tests.rs"]
+mod steam_tests;

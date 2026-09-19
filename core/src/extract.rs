@@ -1,8 +1,6 @@
-use crate::*;
 
 const PLUGIN_META_FILES: [&str; 4] = ["manifest.json", "icon.png", "readme.md", "changelog.md"];
 
-use std::path::Path;
 
 pub const RAR_PASSWORD: &str = "online-fix.me";
 
@@ -334,3 +332,6 @@ pub fn extract_archive(archive_path: &str, dest_dir: &str) -> Result<u32, String
 
 }
 
+#[cfg(test)]
+#[path = "extract_tests.rs"]
+mod extract_tests;

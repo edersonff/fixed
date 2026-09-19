@@ -1,12 +1,9 @@
 use crate::DownloadEngine;
 use crate::DownloadProgress;
-use crate::LANE_AUTOClick;
 use crate::add_game_to_steam;
 use crate::delete_installers;
 use crate::extract_first_rar;
-use crate::find_shortcuts_vdf;
 use crate::log_fail;
-use serde::Serialize;
 use tauri::Emitter;
 use tauri::Manager;
 
@@ -20,13 +17,11 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
         .ok_or_else(|| log_fail(&title, "mirror resolve", format!("no direct mirror in hosters lane {}", lane_url)))?;
 
-    let home = crate::home_dir()
-
-        .ok_or_else(|| log_fail(&title, "home dir", String::from("HOME and USERPROFILE unset")))?;
-
     let safe_title = title.replace('/', "_");
 
-    let folder = format!("{}/games/{}", home, safe_title);
+    let folder = crate::game_folder(&safe_title)
+
+        .ok_or_else(|| log_fail(&title, "home dir", String::from("HOME and USERPROFILE unset")))?;
 
     std::fs::create_dir_all(&folder)
 
@@ -58,7 +53,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
     }
 
-    let dest = format!("{}/game-download.rar", folder);
+    let dest = std::path::Path::new(&folder).join("game-download.rar").to_string_lossy().to_string();
 
     let total = fix_core::http_size(&mirror_url);
 

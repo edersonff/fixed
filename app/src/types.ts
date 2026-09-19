@@ -56,6 +56,8 @@ export type GameAssets = {
 
   logoUrl: string;
 
+  coverUrl?: string;
+
 };
 
 export type DownloadState = "resolving" | "parts" | "error" | "torrenting" | "stopped" | "extracting" | "ready";
@@ -87,6 +89,20 @@ export type ProgressPayload = {
   totalBytes: number;
 
   state: string;
+
+};
+
+export type InstalledGame = {
+
+  title: string;
+
+  folder: string;
+
+  exe: string;
+
+  bytes: number;
+
+  hasPlugins: boolean;
 
 };
 

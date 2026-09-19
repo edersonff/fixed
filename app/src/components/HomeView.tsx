@@ -1,30 +1,16 @@
-import { useEffect, useState } from "react";
-
-import { invoke } from "@tauri-apps/api/core";
-
-import { AnimatePresence, motion } from "framer-motion";
-
-import { Download } from "lucide-react";
+import { useCallback, useEffect } from "react";
 
 import { Search } from "lucide-react";
 
-import { GameCard } from "./GameCard";
+import { HomeCatalog } from "./HomeCatalog";
 
-import { LoadingDots } from "./LoadingDots";
+import { HomeHero } from "./HomeHero";
 
 import { Rail } from "./Rail";
 
-import { displayTitle } from "../lib/format";
+import { prefetchGameAssets } from "../lib/gameAssets";
 
-import { formatDate } from "../lib/format";
-
-import { prettyCategory } from "../lib/format";
-
-import { fadeRiseVariants } from "../lib/motion";
-
-import { heroVariants } from "../lib/motion";
-
-import type { GameAssets } from "../types";
+import { setHeroPreview } from "../lib/heroPreview";
 
 import type { GameDetail } from "../types";
 
@@ -104,29 +90,13 @@ export function HomeView({
 
 }) {
 
-  const [featuredAssets, setFeaturedAssets] = useState<GameAssets | null>(null);
-
-  const [featuredLogoFailed, setFeaturedLogoFailed] = useState(false);
+  const quickDownload = useCallback((game: GameEntry) => requestDownload(game, null), [requestDownload]);
 
   useEffect(() => {
 
-    setFeaturedAssets(null);
+    prefetchGameAssets([...trendingRest, ...recent].map((game) => game.title));
 
-    setFeaturedLogoFailed(false);
-
-    if (!featured) {
-
-      return;
-
-    }
-
-    invoke<GameAssets | null>("game_assets", { title: featured.title })
-
-      .then((result) => setFeaturedAssets(result))
-
-      .catch(() => setFeaturedAssets(null));
-
-  }, [featured?.title]);
+  }, [trendingRest, recent]);
 
   function scrollToCatalog() {
 
@@ -178,105 +148,7 @@ export function HomeView({
 
       </header>
 
-      {featured && (
-
-        <motion.section className="hero" initial="hidden" animate="visible" variants={fadeRiseVariants}>
-
-          <img
-
-            className="hero-bg"
-
-            src={featuredAssets?.heroUrl || featured.posterUrl}
-
-            alt=""
-
-            referrerPolicy="no-referrer"
-
-            onError={(event) => {
-
-              if (featuredAssets?.heroUrl) {
-
-                event.currentTarget.src = featured.posterUrl;
-
-              }
-
-            }}
-
-          />
-
-          <div className="hero-copy">
-
-            <motion.p className="eyebrow" variants={heroVariants} initial="hidden" animate="visible" custom={0}>
-
-              Featured
-
-            </motion.p>
-
-            <motion.h1 className="hero-title" variants={heroVariants} initial="hidden" animate="visible" custom={1}>
-
-              {featuredAssets?.logoUrl && !featuredLogoFailed ? (
-
-                <img
-
-                  className="hero-logo-img"
-
-                  src={featuredAssets.logoUrl}
-
-                  alt={displayTitle(featured.title)}
-
-                  referrerPolicy="no-referrer"
-
-                  onError={() => setFeaturedLogoFailed(true)}
-
-                />
-
-              ) : (
-
-                displayTitle(featured.title)
-
-              )}
-
-            </motion.h1>
-
-            <motion.p className="hero-meta-line" variants={heroVariants} initial="hidden" animate="visible" custom={2}>
-
-              {prettyCategory(featured.category)} · {formatDate(featured.publishedAt)}
-
-            </motion.p>
-
-            <motion.button
-
-              type="button"
-
-              className="hero-cta"
-
-              variants={heroVariants}
-
-              initial="hidden"
-
-              animate="visible"
-
-              custom={3}
-
-              whileHover={{ y: -2 }}
-
-              whileTap={{ scale: 0.97 }}
-
-              onClick={() => openDetail(featured)}
-
-            >
-
-              <Download size={17} strokeWidth={2.2} />
-
-              Download
-
-            </motion.button>
-
-          </div>
-
-        </motion.section>
-
-      )}
+      <HomeHero featured={featured} onSelect={openDetail} />
 
       {error && <p className="state">Failed to Load: {error}</p>}
 
@@ -288,11 +160,13 @@ export function HomeView({
 
         onSelect={openDetail}
 
-        onQuickDownload={(game) => requestDownload(game, null)}
+        onQuickDownload={quickDownload}
 
         quickBusy={quickBusy}
 
         onSeeAll={scrollToCatalog}
+
+        onPreview={setHeroPreview}
 
       />
 
@@ -304,109 +178,37 @@ export function HomeView({
 
         onSelect={openDetail}
 
-        onQuickDownload={(game) => requestDownload(game, null)}
+        onQuickDownload={quickDownload}
 
         quickBusy={quickBusy}
 
         onSeeAll={scrollToCatalog}
 
+        onPreview={setHeroPreview}
+
       />
 
-      <section className="catalog" id="catalog">
+      <HomeCatalog
 
-        <header className="rail-head">
+        visible={visible}
 
-          <h2>All Games</h2>
+        searchTerm={searchTerm}
 
-        </header>
+        busy={busy}
 
-        <div className="grid">
+        canLoadMore={canLoadMore}
 
-          <AnimatePresence mode="popLayout">
+        page={page}
 
-            {visible.map((game, index) => (
+        loadPage={loadPage}
 
-              <GameCard
+        openDetail={openDetail}
 
-                game={game}
+        requestDownload={requestDownload}
 
-                index={index}
+        quickBusy={quickBusy}
 
-                onSelect={openDetail}
-
-                onQuickDownload={(gameEntry) => requestDownload(gameEntry, null)}
-
-                quickBusy={quickBusy}
-
-                key={game.pageUrl}
-
-              />
-
-            ))}
-
-          </AnimatePresence>
-
-        </div>
-
-        {searchTerm && visible.length === 0 && !busy && (
-
-          <motion.div className="empty" initial="hidden" animate="visible" variants={fadeRiseVariants}>
-
-            <motion.div
-
-              className="empty-icon"
-
-              animate={{ y: [0, -4, 0] }}
-
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-
-            >
-
-              <Search size={26} strokeWidth={1.5} />
-
-            </motion.div>
-
-            <motion.h2 variants={fadeRiseVariants} custom={1}>
-
-              No games found
-
-            </motion.h2>
-
-            <motion.p variants={fadeRiseVariants} custom={2}>
-
-              Nothing matches "{searchTerm}" in the catalog loaded so far. Try another name.
-
-            </motion.p>
-
-          </motion.div>
-
-        )}
-
-        {canLoadMore && (
-
-          <motion.button
-
-            type="button"
-
-            className="loadmore"
-
-            disabled={busy}
-
-            whileHover={{ y: -2 }}
-
-            whileTap={{ scale: 0.97 }}
-
-            onClick={() => loadPage(page + 1)}
-
-          >
-
-            {busy ? <LoadingDots label="Loading more games" /> : "Load More"}
-
-          </motion.button>
-
-        )}
-
-      </section>
+      />
 
     </>
 

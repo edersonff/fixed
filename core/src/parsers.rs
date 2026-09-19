@@ -425,3 +425,6 @@ pub fn parse_search(html: &str) -> Vec<GameEntry> {
 
 }
 
+#[cfg(test)]
+#[path = "parsers_tests.rs"]
+mod parsers_tests;

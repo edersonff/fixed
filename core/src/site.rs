@@ -1,6 +1,5 @@
 use crate::USER_AGENT;
 use crate::HOME_FIXTURE;
-use crate::GameEntry;
 use crate::GameDetail;
 use crate::*;
 
@@ -230,3 +229,6 @@ pub fn torrent_file_url(lane_url: &str) -> Option<String> {
 
 }
 
+#[cfg(test)]
+#[path = "site_tests.rs"]
+mod site_tests;

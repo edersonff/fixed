@@ -109,6 +109,12 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px;
   var platform = navigator.userAgent.includes('Windows') ? 'windows'
     : navigator.userAgent.includes('Mac') ? 'mac'
     : 'linux';
+  if (platform === 'mac') {
+    btn.textContent = 'No macOS build yet';
+    btn.classList.add('ready');
+    return;
+  }
+
   fetch('https://api.github.com/repos/edersonff/fixed/releases/latest')
     .then(function (r) { return r.json(); })
     .then(function (rel) {
@@ -116,9 +122,8 @@ footer { border-top:1px solid var(--line); margin-top:32px; padding:26px 0 40px;
       var pick = platform === 'windows'
         ? assets.find(function (u) { return u.endsWith('.exe'); }) || assets.find(function (u) { return u.endsWith('.msi'); })
         : assets.find(function (u) { return u.endsWith('.AppImage'); }) || assets.find(function (u) { return u.endsWith('.deb'); });
-      var label = platform === 'windows' ? 'Download for Windows' : platform === 'mac' ? 'Download for Linux' : 'Download for Linux';
       if (pick) {
-        btn.textContent = label;
+        btn.textContent = platform === 'windows' ? 'Download for Windows' : 'Download for Linux';
         btn.href = pick;
       } else {
         btn.textContent = 'Get it on GitHub';
