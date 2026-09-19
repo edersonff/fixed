@@ -24,6 +24,8 @@ export function useDownloadActions({
 
   onTorrentOnly,
 
+  isBusy,
+
 }: {
 
   setDownloads: (updater: (previous: DownloadEntry[]) => DownloadEntry[]) => void;
@@ -38,9 +40,11 @@ export function useDownloadActions({
 
   onTorrentOnly: (game: GameEntry, gameDetail: GameDetail) => void;
 
+  isBusy: (pageUrl: string) => boolean;
+
 }) {
 
-  const start = useDownloadStart({ setDownloads, setView, setSelected, openDetail, onTorrentOnly });
+  const start = useDownloadStart({ setDownloads, setView, setSelected, openDetail, onTorrentOnly, isBusy });
 
   function stopAll() {
 

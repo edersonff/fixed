@@ -44,20 +44,14 @@ export function needsBlurBackdrop(
 
   naturalWidth: number,
 
-  naturalHeight: number,
+  _naturalHeight: number,
 
   renderedWidth: number,
 
-  renderedHeight: number,
+  _renderedHeight: number,
 
 ): boolean {
 
-  return (
-
-    isLowResArt(naturalWidth, renderedWidth) ||
-
-    isAspectMismatch(naturalWidth, naturalHeight, renderedWidth, renderedHeight)
-
-  );
+  return isLowResArt(naturalWidth, renderedWidth);
 
 }
