@@ -62,7 +62,7 @@
     /* ---------- screenshots ---------- */
     .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin: 48px 0 8px; }
     .shot { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
-    .shot img { display: block; width: 100%; }
+    .shot img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
     .shot figcaption { padding: 12px 14px; color: var(--muted); font-size: 12px; font-weight: 600; }
 
     /* ---------- sections ---------- */
@@ -106,7 +106,7 @@
       <p class="sub">Browse online-fix.me, download with one click, and FIXED handles the rest: extraction, Steam shortcut and a Play button. Zero setup, minimal clicks.</p>
       <div class="ctas">
         <a class="btn primary" id="dl-btn" href="https://github.com/edersonff/fixed/releases/latest/download/fixed-windows-x86_64-setup.exe">Download for Windows</a>
-        <a class="btn ghost" href="https://github.com/edersonff/fixed">Source code</a>
+        <a class="btn ghost" href="https://github.com/edersonff/fixed/releases">Releases</a>
       </div>
     </section>
 
