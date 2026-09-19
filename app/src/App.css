@@ -282,7 +282,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .choice .remember { display: flex; align-items: center; gap: 8px; margin-top: 16px; color: var(--muted); font-size: var(--size-meta); }.choice .remember input { accent-color: var(--lime); cursor: pointer; }
 .choice .dismiss { height: var(--button-micro-height); margin-top: 16px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--button-radius); background: transparent; color: var(--muted); font-size: var(--size-meta); font-weight: 800; transition: border-color var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }.choice .dismiss:hover { border-color: rgba(213, 225, 237, .3); box-shadow: 0 8px 20px rgba(0, 0, 0, .2); color: var(--text); transform: translateY(-2px); }
 
-@keyframes fade-rise { from { opacity: 0; filter: blur(8px); transform: translateY(10px); } to { opacity: 1; filter: blur(0); transform: translateY(0); } }
+@keyframes fade-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes empty-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 

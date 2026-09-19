@@ -94,9 +94,9 @@ export function DetailReview({
 
       className="review-card review-player"
 
-      initial={{ opacity: 0, filter: "blur(8px)" }}
+      initial={{ opacity: 0 }}
 
-      animate={{ opacity: 1, filter: "blur(0px)" }}
+      animate={{ opacity: 1 }}
 
       transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
 
