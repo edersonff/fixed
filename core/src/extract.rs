@@ -220,23 +220,81 @@ pub fn extract_archive(archive_path: &str, dest_dir: &str) -> Result<u32, String
 
     let password_flag = format!("-p{}", RAR_PASSWORD);
 
-    let output = std::process::Command::new("unrar")
+    let mut unrar_candidates: Vec<String> = Vec::new();
 
-        .arg("x")
+    if let Ok(current_exe) = std::env::current_exe() {
 
-        .arg(password_flag)
+        if let Some(dir) = current_exe.parent() {
 
-        .arg("-o+")
+            let sidecar = dir.join(if cfg!(windows) { "unrar.exe" } else { "unrar" });
 
-        .arg("-idp")
+            unrar_candidates.push(sidecar.to_string_lossy().to_string());
 
-        .arg(archive_path)
+        }
 
-        .arg(destination)
+    }
 
-        .output()
+    if cfg!(windows) {
 
-        .map_err(|error| format!("spawn unrar: {}", error))?;
+        unrar_candidates.push(String::from("unrar.exe"));
+
+        unrar_candidates.push(String::from("UnRAR"));
+
+    } else {
+
+        unrar_candidates.push(String::from("unrar"));
+
+    }
+
+    let mut output: Option<std::process::Output> = None;
+
+    let mut spawn_error: Option<String> = None;
+
+    for binary in &unrar_candidates {
+
+        match std::process::Command::new(binary)
+
+            .arg("x")
+
+            .arg(&password_flag)
+
+            .arg("-o+")
+
+            .arg("-idp")
+
+            .arg(archive_path)
+
+            .arg(&destination)
+
+            .output()
+
+        {
+
+            Ok(result) => {
+
+                output = Some(result);
+
+                break;
+
+            }
+
+            Err(error) => {
+
+                spawn_error = Some(format!("{}: {}", binary, error));
+
+            }
+
+        }
+
+    }
+
+    let output = output.ok_or_else(|| {
+
+        let tried = unrar_candidates.join(", ");
+
+        format!("spawn unrar (tried [{}]): {}", tried, spawn_error.unwrap_or_default())
+
+    })?;
 
     if !output.status.success() {
 
