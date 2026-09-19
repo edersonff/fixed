@@ -15,7 +15,7 @@ mod library;
 mod pipeline_http;
 mod plugin;
 mod steam_client;
-mod steam_ipc;
+pub mod steam_ipc;
 mod steam_root;
 mod pipeline_torrent;
 mod state;

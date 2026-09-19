@@ -47,9 +47,11 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
         let mut tries = 0;
 
-        while !crate::steam_ipc::cef_port_open() && tries < 10 {
+        while !crate::steam_ipc::cef_port_open() && tries < 45 {
 
-            std::thread::sleep(std::time::Duration::from_secs(1));
+            crate::launch_progress::emit_progress(app, title, "waiting-steam", &format!("steam client {}s", tries * 2));
+
+            std::thread::sleep(std::time::Duration::from_secs(2));
 
             tries += 1;
 
@@ -119,9 +121,11 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
         let mut tries = 0;
 
-        while !crate::steam_ipc::cef_port_open() && tries < 10 {
+        while !crate::steam_ipc::cef_port_open() && tries < 45 {
 
-            std::thread::sleep(std::time::Duration::from_secs(1));
+            crate::launch_progress::emit_progress(app, title, "waiting-steam", &format!("steam client {}s", tries * 2));
+
+            std::thread::sleep(std::time::Duration::from_secs(2));
 
             tries += 1;
 
