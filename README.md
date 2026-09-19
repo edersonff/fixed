@@ -48,6 +48,11 @@ The `WEBKIT_DISABLE_DMABUF_RENDERER=1` env is required on NVIDIA + WebKitGTK.
 
 Rust core lives in `core/` (scraper, torrent, HTTP download, extraction, Steam shortcuts, plugin install). CI builds and checks both Linux and Windows on every push.
 
-## Notes
+## Legal
 
-Community client, not affiliated with online-fix.me. For personal use with games you own.
+FIXED is a community client. It is not affiliated with, endorsed by, or connected to online-fix.me, Valve, or any game publisher.
+
+- FIXED does not host, store, upload, or distribute any game files or copyrighted content. Downloads come from third-party sources outside this project's control.
+- All game titles, artwork, and trademarks belong to their respective owners.
+- Use FIXED only with content you own or have the right to use, and respect the laws where you live. What you download is your responsibility.
+- This software is provided as is, without warranty of any kind. See [LICENSE](LICENSE).

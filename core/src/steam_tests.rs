@@ -110,12 +110,12 @@ fn add_steam_shortcut_round_trips_through_find_shortcut_appid() {
 
     let path = vdf_path.to_str().unwrap();
 
-    let index = add_steam_shortcut(path, "Friendly Steps", "/games/Friendly Steps/Friendly Steps.exe", "/games/Friendly Steps/", ONLINE_FIX_LAUNCH_OPTIONS)
+    let returned = add_steam_shortcut(path, "Friendly Steps", "/games/Friendly Steps/Friendly Steps.exe", "/games/Friendly Steps/", ONLINE_FIX_LAUNCH_OPTIONS)
         .expect("add shortcut");
 
-    assert_eq!(index, 1);
-
     let expected_appid = shortcut_appid("/games/Friendly Steps/Friendly Steps.exe", "Friendly Steps");
+
+    assert_eq!(returned, expected_appid);
 
     let found = find_shortcut_appid(path, "Friendly Steps").expect("shortcut findable");
 
@@ -143,7 +143,7 @@ fn add_steam_shortcut_is_idempotent_for_the_same_app_name() {
 }
 
 #[test]
-fn add_steam_shortcut_assigns_increasing_indices_for_distinct_apps() {
+fn add_steam_shortcut_returns_the_written_appid_for_each_distinct_app() {
 
     let dir = tempfile::tempdir().expect("tempdir");
 
@@ -157,9 +157,11 @@ fn add_steam_shortcut_assigns_increasing_indices_for_distinct_apps() {
 
     let second = add_steam_shortcut(path, "Bar", "/games/Bar/Bar.exe", "/games/Bar/", ONLINE_FIX_LAUNCH_OPTIONS).expect("add bar");
 
-    assert_eq!(first, 1);
+    assert_eq!(first, shortcut_appid("/games/Foo/Foo.exe", "Foo"));
 
-    assert_eq!(second, 2);
+    assert_eq!(second, shortcut_appid("/games/Bar/Bar.exe", "Bar"));
+
+    assert_ne!(first, second);
 
     assert!(find_shortcut_appid(path, "Foo").is_some());
 
@@ -246,5 +248,16 @@ fn add_steam_shortcut_refuses_to_mutate_when_the_backup_cannot_be_written() {
     assert!(result.is_err());
 
     assert_eq!(std::fs::read(&vdf_path).expect("read vdf"), original);
+
+}
+
+#[test]
+fn shortcut_gameid_shifts_the_appid_into_the_high_word_with_the_shortcut_marker() {
+
+    assert_eq!(shortcut_gameid(3299031949), 14169234329447694336);
+
+    assert_eq!(shortcut_gameid(3082930001), 13241083530185801728);
+
+    assert_eq!(shortcut_gameid(1), 0x0000_0001_0200_0000);
 
 }
