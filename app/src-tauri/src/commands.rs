@@ -6,10 +6,22 @@ use crate::DownloadEngine;
 use crate::DownloadProgress;
 use tauri::Emitter;
 
+pub(crate) fn prof_span<T>(label: &str, run: impl FnOnce() -> T) -> T {
+
+    let start = std::time::Instant::now();
+
+    let result = run();
+
+    eprintln!("[PROF] {} {}ms", label, start.elapsed().as_millis());
+
+    result
+
+}
+
 #[tauri::command]
 pub fn list_games(page: u32) -> fix_core::GamesPage {
 
-    home_games(page)
+    prof_span("list_games", || home_games(page))
 
 }
 
@@ -23,7 +35,7 @@ pub fn find_games(query: String) -> fix_core::GamesPage {
 #[tauri::command]
 pub fn game_detail(url: String) -> fix_core::GameDetail {
 
-    fetch_detail(&url)
+    prof_span("game_detail", || fetch_detail(&url))
 
 }
 
@@ -90,15 +102,19 @@ fn assets_debug_enabled() -> bool {
 
 pub fn game_assets(title: String) -> Option<fix_core::GameAssets> {
 
-    let assets = fix_core::game_assets(&title)?;
+    let assets = prof_span("game_assets", || fix_core::game_assets(&title));
 
     if assets_debug_enabled() {
 
-        eprintln!("[ASSETS] {}: appid {} hero {}", title, assets.appid, assets.hero_url);
+        if let Some(found) = &assets {
+
+            eprintln!("[ASSETS] {}: appid {} hero {}", title, found.appid, found.hero_url);
+
+        }
 
     }
 
-    Some(assets)
+    assets
 
 }
 

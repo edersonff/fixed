@@ -73,6 +73,18 @@ fn read_installed(dir: &std::path::Path) -> Option<InstalledGame> {
 #[tauri::command]
 pub fn installed_games() -> Vec<InstalledGame> {
 
+    let start = std::time::Instant::now();
+
+    let result = installed_games_scan();
+
+    eprintln!("[PROF] installed_games {}ms", start.elapsed().as_millis());
+
+    result
+
+}
+
+fn installed_games_scan() -> Vec<InstalledGame> {
+
     let Some(root) = games_root() else {
 
         return Vec::new();

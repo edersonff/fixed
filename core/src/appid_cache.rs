@@ -6,7 +6,7 @@ use crate::assets::STEAM_API_AGENT;
 
 fn cache_path() -> Option<String> {
 
-    let home = std::env::var("HOME").ok()?;
+    let home = crate::fixed_home()?;
 
     let dir = format!("{}/.cache/fixed", home);
 

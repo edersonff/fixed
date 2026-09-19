@@ -14,6 +14,22 @@ pub(crate) const HOME_FIXTURE: &[u8] = include_bytes!("../tests/fixtures/home.ht
 
 pub(crate) const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 FIXED/0.1";
 
+pub fn fixed_home() -> Option<String> {
+
+    if let Ok(home) = std::env::var("HOME") {
+
+        if !home.is_empty() {
+
+            return Some(home);
+
+        }
+
+    }
+
+    std::env::var("USERPROFILE").ok().filter(|home| !home.is_empty())
+
+}
+
 #[derive(Serialize, serde::Deserialize)]
 
 #[serde(rename_all = "camelCase")]

@@ -54,6 +54,8 @@ fn disable_broken_dmabuf_renderer() {}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
 
+    eprintln!("[BOOT] run entry");
+
     disable_broken_dmabuf_renderer();
 
     let games_dir = helpers::games_root().unwrap_or_else(|| std::env::temp_dir().join("games"));

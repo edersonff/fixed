@@ -9,7 +9,7 @@ const CATALOG_TTL_SECS: u64 = 600;
 
 fn catalog_cache_path(page: u32) -> Option<String> {
 
-    let home = std::env::var("HOME").ok()?;
+    let home = crate::fixed_home()?;
 
     Some(format!("{}/.cache/fixed/catalog-{}.json", home, page))
 

@@ -15,7 +15,7 @@ pub(crate) struct ResolvedAssets {
 
 fn asset_cache_path() -> Option<String> {
 
-    let home = std::env::var("HOME").ok()?;
+    let home = crate::fixed_home()?;
 
     let dir = format!("{}/.cache/fixed", home);
 
