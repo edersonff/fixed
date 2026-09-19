@@ -2,6 +2,8 @@ use librqbit::Session;
 
 use librqbit::SessionOptions;
 
+use tauri::Manager;
+
 mod commands;
 mod game_process;
 mod helpers;
@@ -62,17 +64,57 @@ pub fn run() {
 
     session_opts.disable_dht_persistence = true;
 
-    let session = tauri::async_runtime::block_on(Session::new_with_opts(games_dir, session_opts))
-
-        .expect("start torrent session");
-
     tauri::Builder::default()
 
         .plugin(tauri_plugin_opener::init())
 
         .plugin(tauri_plugin_dialog::init())
 
-        .manage(DownloadEngine { session, cancels: std::sync::Mutex::new(std::collections::HashMap::new()), torrents: std::sync::Mutex::new(std::collections::HashMap::new()) })
+        .manage(DownloadEngine { session: std::sync::Mutex::new(None), cancels: std::sync::Mutex::new(std::collections::HashMap::new()), torrents: std::sync::Mutex::new(std::collections::HashMap::new()) })
+
+        .setup(|app| {
+
+            let handle = app.handle().clone();
+
+            std::thread::spawn(move || {
+
+                let games_dir = helpers::games_root().unwrap_or_else(|| std::env::temp_dir().join("games"));
+
+                let mut session_opts = SessionOptions::default();
+
+                session_opts.disable_dht_persistence = true;
+
+                match tauri::async_runtime::block_on(Session::new_with_opts(games_dir, session_opts)) {
+
+                    Ok(session) => {
+
+                        if let Some(engine) = handle.try_state::<DownloadEngine>() {
+
+                            if let Ok(mut slot) = engine.session.lock() {
+
+                                *slot = Some(session);
+
+                                eprintln!("[DL] torrent engine ready");
+
+                            }
+
+                        }
+
+                    }
+
+                    Err(error) => {
+
+                        eprintln!("[DL] torrent engine failed to start (torrent lane disabled): {}", error);
+
+                    }
+
+                }
+
+            });
+
+            Ok(())
+
+        })
 
         .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game])
 

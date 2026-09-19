@@ -20,7 +20,7 @@ pub struct DownloadProgress {
 
 pub struct DownloadEngine {
 
-    pub session: Arc<Session>,
+    pub session: std::sync::Mutex<Option<Arc<Session>>>,
 
     pub cancels: std::sync::Mutex<std::collections::HashMap<String, std::sync::Arc<std::sync::atomic::AtomicBool>>>,
 

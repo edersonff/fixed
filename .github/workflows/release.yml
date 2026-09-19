@@ -52,6 +52,13 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm tauri build
 
+      - name: Stable asset aliases
+        shell: bash
+        run: |
+          for f in app/src-tauri/target/release/bundle/deb/*.deb app/src-tauri/target/release/bundle/rpm/*.rpm app/src-tauri/target/release/bundle/appimage/*.AppImage; do [ -e "$f" ] || continue; cp "$f" "$(dirname "$f")/fixed-linux-x86_64.${f##*.}"; done
+          for f in app/src-tauri/target/release/bundle/nsis/*.exe; do [ -e "$f" ] || continue; cp "$f" "$(dirname "$f")/fixed-windows-x86_64-setup.exe"; done
+          for f in app/src-tauri/target/release/bundle/msi/*.msi; do [ -e "$f" ] || continue; cp "$f" "$(dirname "$f")/fixed-windows-x86_64.msi"; done
+
       - name: Upload Linux artifacts
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4

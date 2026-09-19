@@ -60,9 +60,15 @@ pub async fn cancel_all_downloads(engine: tauri::State<'_, DownloadEngine>) -> R
 
     for handle in handles {
 
-        if let Err(error) = engine.session.pause(&handle).await {
+        let session = engine.session.lock().map_err(|error| error.to_string())?.clone();
 
-            eprintln!("[DL] pause all failed: {}", error);
+        if let Some(session) = session {
+
+            if let Err(error) = session.pause(&handle).await {
+
+                eprintln!("[DL] pause all failed: {}", error);
+
+            }
 
         }
 
@@ -144,9 +150,15 @@ pub async fn cancel_download(app: tauri::AppHandle, engine: tauri::State<'_, Dow
 
     if let Some(handle) = torrent_handle {
 
-        engine
+        let session = engine.session.lock().map_err(|error| error.to_string())?.clone();
 
-            .session
+        let Some(session) = session else {
+
+            return Err(String::from("torrent engine not ready"));
+
+        };
+
+        session
 
             .pause(&handle)
 

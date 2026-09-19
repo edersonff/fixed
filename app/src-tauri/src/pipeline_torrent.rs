@@ -61,7 +61,13 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
     opts.overwrite = true;
 
-    let session = engine.session.clone();
+    let session = engine.session.lock().map_err(|error| log_fail(&title, "session lock", error.to_string()))?.clone();
+
+    let Some(session) = session else {
+
+        return Err(log_fail(&title, "torrent engine", String::from("engine still starting, try again in a few seconds")));
+
+    };
 
     let response = session
 
