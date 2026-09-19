@@ -1,8 +1,16 @@
-import type { CSSProperties } from "react";
+import { memo } from "react";
 
 import { motion } from "framer-motion";
 
-import { Download } from "lucide-react";
+import { Download, Play } from "lucide-react";
+
+import { ArtImage } from "./ArtImage";
+
+import { useGameAssets } from "../hooks/useGameAssets";
+
+import { useGameLaunch } from "../hooks/useGameLaunch";
+
+import { useIsGameInstalled } from "../hooks/useIsGameInstalled";
 
 import type { GameEntry } from "../types";
 
@@ -14,7 +22,9 @@ import { prettyCategory } from "../lib/format";
 
 import { fadeRiseVariants } from "../lib/motion";
 
-export function GameCard({
+import { liftOnHover, pressDown } from "../lib/motion";
+
+function GameCardBase({
 
   game,
 
@@ -25,6 +35,8 @@ export function GameCard({
   onQuickDownload,
 
   quickBusy,
+
+  onPreview,
 
 }: {
 
@@ -38,19 +50,19 @@ export function GameCard({
 
   quickBusy: boolean;
 
+  onPreview?: (game: GameEntry | null) => void;
+
 }) {
 
-  const cropPositions = ["center 30%", "center 22%", "center 36%", "left 32%", "right 28%"];
+  const rawAssets = useGameAssets(game.title);
 
-  const posterStyle = {
+  const loadingArt = rawAssets === undefined;
 
-    "--poster-position": cropPositions[game.title.length % cropPositions.length],
+  const assets = rawAssets ?? null;
 
-    "--poster-scale": "1.03",
+  const installed = useIsGameInstalled(game.title);
 
-    "--poster-hover-scale": "1.09",
-
-  } as CSSProperties;
+  const { launching, launch } = useGameLaunch(game.title);
 
   return (
 
@@ -76,6 +88,14 @@ export function GameCard({
 
       onClick={() => onSelect(game)}
 
+      onMouseEnter={() => onPreview?.(game)}
+
+      onMouseLeave={() => onPreview?.(null)}
+
+      onFocus={() => onPreview?.(game)}
+
+      onBlur={() => onPreview?.(null)}
+
       onKeyDown={(event: React.KeyboardEvent) => {
 
         if (event.key === "Enter" || event.key === " ") {
@@ -90,9 +110,21 @@ export function GameCard({
 
     >
 
-      <div className="poster" style={posterStyle}>
+      <div className="poster">
 
-        <img src={game.posterUrl} alt={`${game.title} poster`} loading="lazy" referrerPolicy="no-referrer" />
+        <ArtImage
+
+          title={displayTitle(game.title)}
+
+          sources={[assets?.coverUrl, game.posterUrl]}
+
+          loading={loadingArt}
+
+          className="poster-art"
+
+          alt={`${game.title} cover`}
+
+        />
 
         <div className="poster-overlay">
 
@@ -102,15 +134,23 @@ export function GameCard({
 
             className="quick-dl"
 
-            whileHover={{ y: -2 }}
+            whileHover={liftOnHover}
 
-            whileTap={{ scale: 0.97 }}
+            whileTap={pressDown}
 
-            disabled={quickBusy}
+            disabled={installed ? launching : quickBusy}
 
             onClick={(event: React.MouseEvent) => {
 
               event.stopPropagation();
+
+              if (installed) {
+
+                launch();
+
+                return;
+
+              }
 
               onQuickDownload(game);
 
@@ -118,9 +158,9 @@ export function GameCard({
 
           >
 
-            <Download size={14} strokeWidth={2.4} />
+            {installed ? <Play size={14} strokeWidth={2.4} /> : <Download size={14} strokeWidth={2.4} />}
 
-            Get
+            {installed ? (launching ? "Starting" : "Play") : "Get"}
 
           </motion.button>
 
@@ -147,3 +187,5 @@ export function GameCard({
   );
 
 }
+
+export const GameCard = memo(GameCardBase);

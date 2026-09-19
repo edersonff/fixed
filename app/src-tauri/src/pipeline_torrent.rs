@@ -1,20 +1,14 @@
 use bytes::Bytes;
 use librqbit::AddTorrent;
 use librqbit::AddTorrentOptions;
-use librqbit::Session;
-use std::sync::Arc;
 
 use crate::DownloadEngine;
 use crate::DownloadProgress;
-use crate::LANE_AUTOClick;
 use crate::add_game_to_steam;
 use crate::delete_installers;
 use crate::extract_first_rar;
-use crate::find_shortcuts_vdf;
 use crate::log_fail;
-use serde::Serialize;
 use tauri::Emitter;
-use tauri::Manager;
 
 #[tauri::command]
 pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<'_, DownloadEngine>, title: String, lane_url: String) -> Result<String, String> {
@@ -27,13 +21,11 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
         .map_err(|error| log_fail(&title, "torrent fetch", error))?;
 
-    let home = crate::home_dir()
-
-        .ok_or_else(|| log_fail(&title, "home dir", String::from("HOME and USERPROFILE unset")))?;
-
     let safe_title = title.replace('/', "_");
 
-    let folder = format!("{}/games/{}", home, safe_title);
+    let folder = crate::game_folder(&safe_title)
+
+        .ok_or_else(|| log_fail(&title, "home dir", String::from("HOME and USERPROFILE unset")))?;
 
     std::fs::create_dir_all(&folder)
 

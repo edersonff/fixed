@@ -6,6 +6,8 @@ import { ShieldAlert } from "lucide-react";
 
 import { openUrl } from "@tauri-apps/plugin-opener";
 
+import { liftOnHover, pressDown } from "../lib/motion";
+
 const STEPS = [
 
   "Settings > Privacy & Security > Windows Security",
@@ -100,9 +102,9 @@ export function DefenderModal({ open, onClose }: { open: boolean; onClose: () =>
 
                 className="ghost"
 
-                whileHover={{ y: -2 }}
+                whileHover={liftOnHover}
 
-                whileTap={{ scale: 0.97 }}
+                whileTap={pressDown}
 
                 disabled={opening}
 
@@ -126,9 +128,9 @@ export function DefenderModal({ open, onClose }: { open: boolean; onClose: () =>
 
                 className="hero-cta"
 
-                whileHover={{ y: -2 }}
+                whileHover={liftOnHover}
 
-                whileTap={{ scale: 0.97 }}
+                whileTap={pressDown}
 
                 onClick={onClose}
 

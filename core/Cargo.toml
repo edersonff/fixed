@@ -1,6 +1,6 @@
 [package]
 name = "fix-core"
-version = "0.1.0"
+version = "0.2.1"
 edition = "2021"
 
 [dependencies]
@@ -13,3 +13,6 @@ librqbit = "8"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 bytes = "1"
+
+[dev-dependencies]
+tempfile = "3"

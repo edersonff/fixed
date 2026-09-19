@@ -1,10 +1,3 @@
-use crate::DownloadEngine;
-use crate::DownloadProgress;
-use crate::LANE_AUTOClick;
-use serde::Serialize;
-use tauri::Emitter;
-use tauri::Manager;
-
 pub fn looks_like_rar(path: &std::path::Path) -> bool {
 
     let Ok(mut file) = std::fs::File::open(path) else {
@@ -88,6 +81,18 @@ pub fn home_dir() -> Option<String> {
     }
 
     std::env::var("USERPROFILE").ok().filter(|home| !home.is_empty())
+
+}
+
+pub fn games_root() -> Option<std::path::PathBuf> {
+
+    home_dir().map(|home| std::path::PathBuf::from(home).join("games"))
+
+}
+
+pub fn game_folder(title: &str) -> Option<String> {
+
+    games_root().map(|root| root.join(title).to_string_lossy().to_string())
 
 }
 
@@ -179,7 +184,7 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
         .parent()
 
-        .map(|parent| format!("{}/", parent.to_string_lossy()))
+        .map(|parent| format!("{}{}", parent.to_string_lossy(), std::path::MAIN_SEPARATOR))
 
         .unwrap_or_default();
 

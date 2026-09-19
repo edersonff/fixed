@@ -52,3 +52,34 @@ export function displayTitle(raw: string): string {
     .join(" ");
 
 }
+
+
+export function displayLane(raw: string): string {
+
+  return raw
+
+    .replace("google-drive", "Google Drive")
+
+    .replace(/(^|[- ])([a-z])/g, (_, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
+
+}
+
+
+export function megabytes(bytes: number): string {
+
+  return `${(bytes / 1_000_000).toFixed(1)} MB`;
+
+}
+
+
+export function diskSize(bytes: number): string {
+
+  if (bytes >= 1_000_000_000) {
+
+    return `${(bytes / 1_000_000_000).toFixed(1)} GB`;
+
+  }
+
+  return megabytes(bytes);
+
+}

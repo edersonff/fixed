@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { AnimatePresence, motion } from "framer-motion";
 
 import { ChevronRight } from "lucide-react";
@@ -6,7 +8,9 @@ import type { GameEntry } from "../types";
 
 import { GameCard } from "./GameCard";
 
-export function Rail({
+import { liftOnHover, pressDown } from "../lib/motion";
+
+function RailBase({
 
   title,
 
@@ -19,6 +23,8 @@ export function Rail({
   quickBusy,
 
   onSeeAll,
+
+  onPreview,
 
 }: {
 
@@ -33,6 +39,8 @@ export function Rail({
   quickBusy: boolean;
 
   onSeeAll: () => void;
+
+  onPreview?: (game: GameEntry | null) => void;
 
 }) {
 
@@ -56,9 +64,9 @@ export function Rail({
 
           className="seeall"
 
-          whileHover={{ y: -2 }}
+          whileHover={liftOnHover}
 
-          whileTap={{ scale: 0.97 }}
+          whileTap={pressDown}
 
           onClick={onSeeAll}
 
@@ -88,6 +96,8 @@ export function Rail({
 
             quickBusy={quickBusy}
 
+            onPreview={onPreview}
+
             key={game.pageUrl}
 
           />
@@ -103,3 +113,5 @@ export function Rail({
   );
 
 }
+
+export const Rail = memo(RailBase);

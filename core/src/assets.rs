@@ -218,3 +218,8 @@ pub fn game_assets(title: &str) -> Option<GameAssets> {
     })
 
 }
+
+#[cfg(test)]
+#[path = "assets_tests.rs"]
+mod assets_tests;
+
