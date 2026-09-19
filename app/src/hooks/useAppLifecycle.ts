@@ -18,11 +18,15 @@ export function useAppLifecycle(setSelected: (game: GameEntry | null) => void) {
 
   useEffect(() => {
 
-    if (shouldShowDefenderModal()) {
+    if (!shouldShowDefenderModal()) {
 
-      setShowDefender(true);
+      return;
 
     }
+
+    const timer = window.setTimeout(() => setShowDefender(true), 1500);
+
+    return () => window.clearTimeout(timer);
 
   }, []);
 

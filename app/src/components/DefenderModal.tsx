@@ -56,11 +56,11 @@ export function DefenderModal({ open, onClose }: { open: boolean; onClose: () =>
 
             aria-label="Windows Defender notice"
 
-            initial={{ opacity: 0, y: 14, scale: 0.97, filter: "blur(6px)" }}
+            initial={{ opacity: 0, y: 14, scale: 0.97 }}
 
-            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
 
-            exit={{ opacity: 0, y: 10, scale: 0.98, filter: "blur(4px)" }}
+            exit={{ opacity: 0, y: 10, scale: 0.98 }}
 
             transition={{ duration: 0.22, ease: [0.05, 0.7, 0.1, 1] }}
 

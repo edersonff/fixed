@@ -92,7 +92,7 @@ export function useGameLaunch(gameTitle: string) {
 
         if (result.startsWith("launched:")) {
 
-          getCurrentWindow().minimize().catch(() => undefined);
+          getCurrentWindow().hide().catch(() => undefined);
 
         }
 
