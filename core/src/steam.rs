@@ -14,7 +14,51 @@ pub fn shortcut_appid(exe_path: &str, app_name: &str) -> u32 {
 
     }
 
-    hash
+    hash | 0x80000000
+
+}
+
+pub fn find_shortcut_appid(vdf_path: &str, app_name: &str) -> Option<u32> {
+
+    let data = std::fs::read(vdf_path).ok()?;
+
+    let name_marker = vdf_string("AppName", app_name);
+
+    let found = find_subslice(&data, &name_marker, 0)?;
+
+    let seg_start = found.saturating_sub(160);
+
+    let seg = &data[seg_start..found];
+
+    let marker = b"\x02appid\x00";
+
+    let pos = seg.len().saturating_sub(marker.len() + 4);
+
+    let idx = find_subslice(seg, marker, 0)?;
+
+    let _ = pos;
+
+    let value_start = idx + marker.len();
+
+    if value_start + 4 > seg.len() {
+
+        return None;
+
+    }
+
+    let bytes: [u8; 4] = [
+
+        seg[value_start],
+
+        seg[value_start + 1],
+
+        seg[value_start + 2],
+
+        seg[value_start + 3],
+
+    ];
+
+    Some(u32::from_le_bytes(bytes))
 
 }
 

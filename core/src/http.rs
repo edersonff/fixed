@@ -1,9 +1,11 @@
 use crate::USER_AGENT;
 use crate::*;
 
-pub fn mirror_download_url(hosters_url: &str) -> Option<String> {
+pub fn mirror_download_url(hosters_url: &str) -> Result<Option<String>, String> {
 
-    let bytes = fetch_bytes(hosters_url).ok()?;
+    let bytes = fetch_bytes(hosters_url)
+
+        .map_err(|error| format!("hosters listing {}: {}", hosters_url, error))?;
 
     let html = String::from_utf8_lossy(&bytes).to_string();
 
@@ -27,7 +29,7 @@ pub fn mirror_download_url(hosters_url: &str) -> Option<String> {
 
     }
 
-    best
+    Ok(best)
 
 }
 
