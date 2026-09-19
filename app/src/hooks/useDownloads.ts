@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+
 import { useDownloadActions } from "./useDownloadActions";
 
 import { useDownloadQueue } from "./useDownloadQueue";
@@ -36,7 +38,25 @@ export function useDownloads({
 
   const { downloads, setDownloads } = useDownloadQueue();
 
-  const actions = useDownloadActions({ setDownloads, setView, setSelected, openDetail, onError, onTorrentOnly });
+  const isBusy = useCallback(
+
+    (pageUrl: string) =>
+
+      downloads.some(
+
+        (entry) =>
+
+          entry.game.pageUrl === pageUrl &&
+
+          (entry.state === "torrenting" || entry.state === "extracting" || entry.state === "resolving"),
+
+      ),
+
+    [downloads],
+
+  );
+
+  const actions = useDownloadActions({ setDownloads, setView, setSelected, openDetail, onError, onTorrentOnly, isBusy });
 
   return { downloads, ...actions };
 

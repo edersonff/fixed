@@ -22,6 +22,8 @@ export function useDownloadStart({
 
   onTorrentOnly,
 
+  isBusy,
+
 }: {
 
   setDownloads: (updater: (previous: DownloadEntry[]) => DownloadEntry[]) => void;
@@ -34,11 +36,21 @@ export function useDownloadStart({
 
   onTorrentOnly: (game: GameEntry, gameDetail: GameDetail) => void;
 
+  isBusy: (pageUrl: string) => boolean;
+
 }) {
 
   const [quickBusy, setQuickBusy] = useState(false);
 
   function startTorrent(game: GameEntry, gameDetail: GameDetail) {
+
+    if (isBusy(game.pageUrl)) {
+
+      setView("downloads");
+
+      return;
+
+    }
 
     const torrentLane = gameDetail.lanes.find(
 
@@ -93,6 +105,14 @@ export function useDownloadStart({
   }
 
   function startHttp(game: GameEntry, hostersUrl: string) {
+
+    if (isBusy(game.pageUrl)) {
+
+      setView("downloads");
+
+      return;
+
+    }
 
     const safeTitle = game.title.replace(/\//g, "_");
 
