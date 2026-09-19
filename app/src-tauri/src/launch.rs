@@ -153,25 +153,136 @@ fn ensure_registered_and_running(app: &tauri::AppHandle, title: &str, folder: &s
 
 }
 
-// `done` only means the URL reached Steam, never that the game process is up — nothing on this
-// side can observe the game itself starting.
-fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, String> {
+// CEF flow: Steam's own client API assigns the appid (Steam-emitted ids are the only ones that
+// launch — measured 2026-09-19: FNV and CRC32 ids both die with AppError_9) and RunGame hands the
+// game a real session. Same mechanism as Heroic/NonSteamLaunchers/Decky (steamwebhelper CDP).
+async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Result<String, String> {
 
-    crate::launch_progress::emit_progress(app, title, "checking", "");
+    crate::steam_ipc::ensure_cef_flag()?;
 
-    let folder = crate::game_folder(title).ok_or_else(|| String::from("home dir not found"))?;
+    if !crate::steam_ipc::cef_port_open() {
 
-    if fix_core::find_game_exe(&folder).is_none() {
+        if crate::steam_client::is_steam_running() {
 
-        let message = format!("no game exe found in {}", folder);
+            crate::launch_progress::emit_progress(app, title, "stopping-steam", "");
 
-        eprintln!("[LAUNCH] {}: {}", title, message);
+            crate::steam_client::shutdown()?;
 
-        return Err(message);
+        }
+
+        crate::launch_progress::emit_progress(app, title, "starting-steam", "");
+
+        crate::steam_client::start_silent()?;
+
+        if !crate::launch_progress::wait_with_progress(app, title) {
+
+            return Err(String::from("steam did not come up with cef debugging"));
+
+        }
+
+        let mut tries = 0;
+
+        while !crate::steam_ipc::cef_port_open() && tries < 10 {
+
+            std::thread::sleep(std::time::Duration::from_secs(1));
+
+            tries += 1;
+
+        }
+
+        if !crate::steam_ipc::cef_port_open() {
+
+            return Err(String::from("cef debugging port never opened"));
+
+        }
 
     }
 
-    ensure_registered_and_running(app, title, &folder)?;
+    let (vdf, root) = steam_paths()?;
+
+    let mut appid = fix_core::find_shortcut_appid_by_exe(&vdf, exe);
+
+    if appid.is_none() {
+
+        crate::launch_progress::emit_progress(app, title, "registering", "");
+
+        appid = Some(crate::steam_ipc::cef_add_shortcut(title, exe).await?);
+
+        let new_appid = appid.unwrap_or_default();
+
+        crate::steam_ipc::cef_set_launch_options(new_appid, fix_core::ONLINE_FIX_LAUNCH_OPTIONS).await?;
+
+    }
+
+    let appid = appid.ok_or_else(|| String::from("no shortcut appid"))?;
+
+    if !fix_core::is_compat_tool_mapped(&root.to_string_lossy(), appid) {
+
+        if crate::steam_client::is_steam_running() {
+
+            crate::launch_progress::emit_progress(app, title, "stopping-steam", "");
+
+            crate::steam_client::shutdown()?;
+
+        }
+
+        crate::launch_progress::emit_progress(app, title, "registering", "");
+
+        fix_core::ensure_compat_tool(&root.to_string_lossy(), appid, fix_core::DEFAULT_COMPAT_TOOL)?;
+
+        crate::launch_progress::emit_progress(app, title, "starting-steam", "");
+
+        crate::steam_client::start_silent()?;
+
+        if !crate::launch_progress::wait_with_progress(app, title) {
+
+            return Err(String::from("steam did not come up after compat mapping"));
+
+        }
+
+        let mut tries = 0;
+
+        while !crate::steam_ipc::cef_port_open() && tries < 10 {
+
+            std::thread::sleep(std::time::Duration::from_secs(1));
+
+            tries += 1;
+
+        }
+
+    }
+
+    crate::launch_progress::emit_progress(app, title, "launching", "");
+
+    let gid = match crate::steam_ipc::cef_run_game(appid).await {
+
+        Ok(gid) => gid,
+
+        Err(error) => {
+
+            eprintln!("[LAUNCH] {}: CEF RunGame failed ({}), falling back to url", title, error);
+
+            let url = format!("steam://rungameid/{}", fix_core::shortcut_gameid(appid));
+
+            crate::steam_client::open_url(&url)?;
+
+            fix_core::shortcut_gameid(appid)
+
+        }
+
+    };
+
+    eprintln!("[LAUNCH] {}: CEF gid {} (appid {})", title, gid, appid);
+
+    crate::launch_progress::emit_progress(app, title, "done", &gid.to_string());
+
+    Ok(format!("launched:{}", gid))
+
+}
+
+fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<String, String> {
+
+    ensure_registered_and_running(app, title, folder)?;
 
     if !crate::launch_progress::wait_with_progress(app, title) {
 
@@ -203,11 +314,45 @@ fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, String> {
 
 }
 
+// `done` only means the request reached Steam, never that the game process is up — nothing on this
+// side can observe the game itself starting.
+async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, String> {
+
+    crate::launch_progress::emit_progress(app, title, "checking", "");
+
+    let folder = crate::game_folder(title).ok_or_else(|| String::from("home dir not found"))?;
+
+    let Some(exe) = fix_core::find_game_exe(&folder) else {
+
+        let message = format!("no game exe found in {}", folder);
+
+        eprintln!("[LAUNCH] {}: {}", title, message);
+
+        return Err(message);
+
+    };
+
+    match cef_launch_flow(app, title, &exe).await {
+
+        Ok(result) => Ok(result),
+
+        Err(cef_error) => {
+
+            eprintln!("[LAUNCH] {}: CEF flow failed ({}), falling back to legacy vdf flow", title, cef_error);
+
+            legacy_flow(app, title, &folder)
+
+        }
+
+    }
+
+}
+
 #[tauri::command]
 
-pub fn launch_game(app: tauri::AppHandle, title: String) -> Result<String, String> {
+pub async fn launch_game(app: tauri::AppHandle, title: String) -> Result<String, String> {
 
-    let result = run_launch(&app, &title);
+    let result = run_launch(&app, &title).await;
 
     if let Err(error) = &result {
 
