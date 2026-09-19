@@ -5,3 +5,6 @@ target/
 .DS_Store
 .omo/
 .playwright-mcp/
+.claude/
+app/.claude/
+*.bak-*

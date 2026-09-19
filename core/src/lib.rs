@@ -71,19 +71,31 @@ pub struct GameDetail {
 }
 
 
+mod appid_cache;
+mod asset_cache;
+mod asset_download;
 mod assets;
+mod compat_tool;
 mod extract;
 mod http;
 mod parsers;
 mod site;
 mod steam;
+mod steam_remove;
+mod store_items;
 
+#[cfg(test)]
+mod test_support;
+
+pub use asset_download::*;
 pub use assets::*;
+pub use compat_tool::*;
 pub use extract::*;
 pub use http::*;
 pub use parsers::*;
 pub use site::*;
 pub use steam::*;
+pub use steam_remove::*;
 
 #[derive(Serialize)]
 
