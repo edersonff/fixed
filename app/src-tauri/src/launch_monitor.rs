@@ -218,7 +218,7 @@ fn watch_fix_activation(title: String) {
 
     std::thread::spawn(move || {
 
-        for _ in 0..15 {
+        for _ in 0..75 {
 
             std::thread::sleep(std::time::Duration::from_secs(2));
 
@@ -232,7 +232,7 @@ fn watch_fix_activation(title: String) {
 
         }
 
-        crate::flog(&format!("[FIX] {}: no online-fix site open within 30s of launch", title));
+        crate::flog(&format!("[FIX] {}: no online-fix site open within 150s of launch", title));
 
     });
 
