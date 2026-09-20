@@ -22,7 +22,7 @@ const PHASE_LABELS: Record<string, string> = {
 
   launching: "Launching",
 
-  done: "Waiting for game",
+  done: "Running",
 
   running: "Running",
 
@@ -32,7 +32,7 @@ const PHASE_LABELS: Record<string, string> = {
 
 const IDLE_PHASE = "idle";
 
-const RESOLVED_PHASES = new Set(["idle", "running", "exited", "failed"]);
+const RESOLVED_PHASES = new Set(["idle", "running", "done", "exited", "failed"]);
 
 function phaseMessage(phase: string, detail: string): string {
 

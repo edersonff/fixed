@@ -264,7 +264,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
     flog(&format!("[LAUNCH] {}: confirmed running (pid {}, gid {}, appid {})", title, pid, gid, appid));
 
-    crate::launch_progress::emit_progress(app, title, "done", &gid.to_string());
+    crate::launch_progress::emit_progress(app, title, "done", "");
 
     Ok(format!("launched:{}", gid))
 
@@ -372,19 +372,40 @@ async fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Resul
 
     let url = format!("steam://rungameid/{}", fix_core::shortcut_gameid(appid));
 
-    let pid = crate::steam_client::open_url(&url)?;
+    let url_pid = crate::steam_client::open_url(&url)?;
 
-    flog(&format!("[LAUNCH] {}: {} (pid {})", title, url, pid));
+    flog(&format!("[LAUNCH] {}: {} (pid {})", title, url, url_pid));
 
-    crate::launch_progress::emit_progress(app, title, "done", &url);
+    crate::launch_progress::emit_progress(app, title, "launching", "fired, waiting for steam to start it");
+
+    let confirm_app = app.clone();
+
+    let confirm_title = title.to_string();
+
+    let confirm_exe = exe.to_string();
+
+    let pid = tokio::task::spawn_blocking(move || {
+
+        crate::launch_monitor::confirm_and_track(&confirm_app, &confirm_title, appid, &confirm_exe)
+
+    })
+
+        .await
+
+        .map_err(|error| format!("launch monitor join: {}", error))??;
+
+    flog(&format!("[LAUNCH] {}: confirmed running (pid {}, url {})", title, pid, url));
+
+    crate::launch_progress::emit_progress(app, title, "done", "");
 
     Ok(format!("launched:{}", url))
 
 }
 
-// The CEF path's `done` means the game process was observed running (see launch_monitor). The
-// legacy vdf fallback below has no CDP session to confirm through, so its `done` only means the
-// steam:// request reached Steam.
+// Both paths confirm through launch_monitor before reporting `done`: the game process must be
+// observed running, otherwise the phase turns `failed` and the card reverts to Play instead of
+// waiting forever on a URL Steam silently dropped (measured 2026-09-20: legacy fired, handler pid
+// died defunct, card sat on "Waiting for game" indefinitely).
 async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, String> {
 
     crate::launch_progress::emit_progress(app, title, "checking", "");
