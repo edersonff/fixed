@@ -422,6 +422,18 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
     };
 
+    let basename = crate::launch_monitor::exe_basename(&exe);
+
+    if let Some(pid) = crate::game_process::find_game_pid(&basename) {
+
+        flog(&format!("[LAUNCH] {}: already running (pid {})", title, pid));
+
+        crate::launch_progress::emit_progress(app, title, "running", "");
+
+        return Ok(format!("launched:{}", pid));
+
+    }
+
     match cef_launch_flow(app, title, &exe).await {
 
         Ok(result) => Ok(result),

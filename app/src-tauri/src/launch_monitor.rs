@@ -98,7 +98,7 @@ fn poll_until_some<T, F: FnMut() -> Option<T>>(timeout: Duration, interval: Dura
 
 }
 
-fn exe_basename(exe: &str) -> String {
+pub(crate) fn exe_basename(exe: &str) -> String {
 
     std::path::Path::new(exe)
         .file_name()
