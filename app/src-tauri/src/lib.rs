@@ -109,6 +109,46 @@ pub fn run() {
 
     disable_broken_dmabuf_renderer();
 
+    std::thread::spawn(|| {
+
+        if steam_client::is_steam_running() {
+
+            flog("[STEAM] prewarm: already running");
+
+            return;
+
+        }
+
+        flog("[STEAM] prewarm: starting silent steam in background (app open, not on Play)");
+
+        if let Err(error) = steam_client::start_silent() {
+
+            flog(&format!("[STEAM] prewarm: {}", error));
+
+            return;
+
+        }
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(90);
+
+        while std::time::Instant::now() < deadline {
+
+            if steam_client::is_steam_ready() {
+
+                flog("[STEAM] prewarm: steam ready");
+
+                return;
+
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(500));
+
+        }
+
+        flog("[STEAM] prewarm: steam not ready within 90s (launch flow will keep waiting)");
+
+    });
+
     let games_dir = helpers::games_root().unwrap_or_else(|| std::env::temp_dir().join("games"));
 
     if let Err(error) = std::fs::create_dir_all(&games_dir) {
