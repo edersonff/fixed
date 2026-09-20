@@ -213,7 +213,61 @@ fn fix_site_opened() -> bool {
 
     }
 
-    false
+    fix_site_connection_open()
+
+}
+
+// The cmdline scan above is blind to the real-world case: the owner's browser is always running,
+// so the game's site opens as a NEW TAB — no new process carries the URL. A loaded page keeps an
+// established connection (TCP, or QUIC over UDP for http/3 browsers), so resolved-IP +
+// browser-process match in `ss` catches it; the browser-name requirement excludes our own scraper
+// connections to the same host.
+#[cfg(not(windows))]
+fn fix_site_connection_open() -> bool {
+
+    static RESOLVED: OnceLock<Vec<String>> = OnceLock::new();
+
+    let ips = RESOLVED.get_or_init(|| {
+
+        std::net::ToSocketAddrs::to_socket_addrs("online-fix.me:443")
+
+            .map(|addrs| addrs.map(|a| a.ip().to_string()).collect())
+
+            .unwrap_or_default()
+
+    });
+
+    if ips.is_empty() {
+
+        return false;
+
+    }
+
+    let Ok(output) = std::process::Command::new("ss")
+
+        .args(["-tunp", "state", "established"])
+
+        .output()
+
+    else {
+
+        return false;
+
+    };
+
+    let text = String::from_utf8_lossy(&output.stdout);
+
+    text.lines().any(|line| {
+
+        let is_browser = ["chrome", "chromium", "brave", "firefox", "edge", "vivaldi", "opera"]
+
+            .iter()
+
+            .any(|name| line.contains(name));
+
+        is_browser && ips.iter().any(|ip| line.contains(ip.as_str()))
+
+    })
 
 }
 

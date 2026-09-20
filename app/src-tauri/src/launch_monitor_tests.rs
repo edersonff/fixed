@@ -69,3 +69,33 @@ fn poll_until_some_returns_the_value_once_the_check_finds_it() {
     assert_eq!(result, Some(2));
 
 }
+
+#[test]
+#[ignore = "needs python3, ss and outbound https reach (live network)"]
+fn connection_signal_detects_browser_named_established_socket() {
+
+    let mut simulator = std::process::Command::new("python3")
+
+        .arg("-c")
+
+        .arg("import socket, time\nopen('/proc/self/comm', 'w').write('chrome')\nwhile True:\n    socks = []\n    for info in socket.getaddrinfo('online-fix.me', 443, socket.AF_INET, socket.SOCK_STREAM):\n        try:\n            socks.append(socket.create_connection(info[4], timeout=5))\n        except OSError:\n            pass\n    time.sleep(5)\n    for s in socks:\n        try:\n            s.close()\n        except OSError:\n            pass")
+
+        .stdout(std::process::Stdio::null())
+
+        .stderr(std::process::Stdio::null())
+
+        .spawn()
+
+        .expect("python3 available");
+
+    std::thread::sleep(std::time::Duration::from_secs(5));
+
+    let detected = super::fix_site_connection_open();
+
+    let _ = simulator.kill();
+
+    let _ = simulator.wait();
+
+    assert!(detected, "expected the chrome-named established socket to online-fix.me to be detected");
+
+}
