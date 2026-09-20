@@ -185,6 +185,8 @@ export function LibraryCard({
 
             {diskSize(game.bytes)}
 
+            {game.build && <span className="lane-badge">v{game.build}</span>}
+
             {game.hasPlugins && <span className="lane-badge">Plugins</span>}
 
           </p>

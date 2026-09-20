@@ -17,6 +17,8 @@ pub struct InstalledGame {
 
     pub has_plugins: bool,
 
+    pub build: Option<String>,
+
 }
 
 fn folder_bytes(dir: &std::path::Path) -> u64 {
@@ -55,6 +57,11 @@ fn read_installed(dir: &std::path::Path) -> Option<InstalledGame> {
         .map(|parent| parent.join("BepInEx").join("plugins").is_dir())
         .unwrap_or(false);
 
+    let build = std::fs::read_to_string(dir.join(".fixed-build"))
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+
     Some(InstalledGame {
 
         title,
@@ -66,6 +73,8 @@ fn read_installed(dir: &std::path::Path) -> Option<InstalledGame> {
         bytes: folder_bytes(dir),
 
         has_plugins,
+
+        build,
 
     })
 

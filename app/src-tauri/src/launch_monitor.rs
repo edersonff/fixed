@@ -141,6 +141,9 @@ pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32,
 
     crate::launch_progress::emit_progress(app, title, "running", &format!("pid {}", pid));
 
+    #[cfg(not(windows))]
+    watch_fix_activation(title.to_string());
+
     let watch_app = app.clone();
 
     let watch_title = title.to_string();
@@ -176,6 +179,62 @@ fn watch_exit(app: &tauri::AppHandle, title: &str, pid: u32, _guard: TitleGuard)
     }
 
     crate::launch_progress::emit_progress(app, title, "exited", &detail);
+
+}
+
+#[cfg(not(windows))]
+fn fix_site_opened() -> bool {
+
+    let Ok(entries) = std::fs::read_dir("/proc") else {
+
+        return false;
+
+    };
+
+    let needle = b"online-fix.me";
+
+    for entry in entries.flatten() {
+
+        let Ok(cmdline) = std::fs::read(entry.path().join("cmdline")) else {
+
+            continue;
+
+        };
+
+        if cmdline.windows(needle.len()).any(|window| window == needle) {
+
+            return true;
+
+        }
+
+    }
+
+    false
+
+}
+
+#[cfg(not(windows))]
+fn watch_fix_activation(title: String) {
+
+    std::thread::spawn(move || {
+
+        for _ in 0..15 {
+
+            std::thread::sleep(std::time::Duration::from_secs(2));
+
+            if fix_site_opened() {
+
+                crate::flog(&format!("[FIX] {}: online-fix site opened by the game, fix active", title));
+
+                return;
+
+            }
+
+        }
+
+        crate::flog(&format!("[FIX] {}: no online-fix site open within 30s of launch", title));
+
+    });
 
 }
 

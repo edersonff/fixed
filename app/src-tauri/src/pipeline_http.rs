@@ -10,7 +10,7 @@ use tauri::Manager;
 
 #[tauri::command]
 
-pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: String) -> Result<String, String> {
+pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: String, build: Option<String>) -> Result<String, String> {
 
     let mirror_url = fix_core::mirror_download_url(&lane_url)
 
@@ -158,6 +158,8 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
     let pipeline_safe_title = safe_title.clone();
 
+    let pipeline_build = build;
+
     tauri::async_runtime::spawn(async move {
 
         let url = dl_url.clone();
@@ -239,6 +241,18 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
                         add_game_to_steam(&pipeline_title, &pipeline_folder);
 
                         delete_installers(&pipeline_folder);
+
+                        if let Some(build) = &pipeline_build {
+
+                            let marker = std::path::Path::new(&pipeline_folder).join(".fixed-build");
+
+                            if let Err(error) = std::fs::write(&marker, build) {
+
+                                flog(&format!("[DL] {}: build marker write failed: {}", pipeline_title, error));
+
+                            }
+
+                        }
 
                         String::from("ready")
 

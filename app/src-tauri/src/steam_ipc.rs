@@ -35,6 +35,12 @@ pub fn cef_port_open() -> bool {
 
 }
 
+pub fn cef_shared_js_ready() -> bool {
+
+    shared_js_ws_url().is_ok()
+
+}
+
 fn shared_js_ws_url() -> Result<String, String> {
 
     let url = format!("http://127.0.0.1:{}/json", CEF_DEBUG_PORT);
@@ -232,6 +238,18 @@ pub async fn cef_app_known(appid: u32) -> Result<bool, String> {
     flog(&format!("[CEF] app known {} -> {}", appid, known));
 
     Ok(known)
+
+}
+
+pub async fn cef_remove_shortcut(appid: u32) -> Result<(), String> {
+
+    let expression = format!("SteamClient.Apps.RemoveShortcut({})", appid);
+
+    cdp_evaluate(&expression).await?;
+
+    flog(&format!("[CEF] RemoveShortcut {} ok", appid));
+
+    Ok(())
 
 }
 

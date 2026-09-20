@@ -155,8 +155,33 @@ pub fn find_shortcuts_vdf() -> Option<String> {
 
 }
 
-pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
+pub fn write_stable_shortcut(title: &str, exe: &str, appid: u32) -> Result<(), String> {
 
+    let Some(vdf) = find_shortcuts_vdf() else {
+
+        return Err(String::from("steam shortcuts.vdf not found"));
+
+    };
+
+    let _ = fix_core::remove_steam_shortcut(&vdf, title);
+
+    let start_dir = std::path::Path::new(exe)
+
+        .parent()
+
+        .map(|parent| format!("{}/", parent.to_string_lossy()))
+
+        .unwrap_or_default();
+
+    fix_core::add_shortcut_with_appid(&vdf, title, exe, &start_dir, fix_core::ONLINE_FIX_LAUNCH_OPTIONS, appid)?;
+
+    crate::flog(&format!("[STEAM] {}: stable shortcut written, appid {}", title, appid));
+
+    Ok(())
+
+}
+
+pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
     let Some(vdf) = find_shortcuts_vdf() else {
 
         flog(&format!("[DL] {}: steam shortcuts.vdf not found", title));

@@ -186,6 +186,34 @@ pub fn shutdown() -> Result<(), String> {
 
 }
 
+pub fn shutdown_full() -> Result<(), String> {
+
+    shutdown()?;
+
+    let mut tries = 0;
+
+    while is_steam_running() && tries < 25 {
+
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        tries += 1;
+
+    }
+
+    if is_steam_running() {
+
+        crate::flog(&format!("[STEAM] shutdown: process still alive after {}s, file edits may race the flush", tries));
+
+    } else {
+
+        std::thread::sleep(std::time::Duration::from_secs(3));
+
+    }
+
+    Ok(())
+
+}
+
 pub fn open_url(url: &str) -> Result<u32, String> {
 
     #[cfg(windows)]

@@ -115,6 +115,96 @@ pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_
 
 }
 
+pub fn add_shortcut_with_appid(vdf_path: &str, app_name: &str, exe_path: &str, start_dir: &str, launch_options: &str, appid: u32) -> Result<(), String> {
+
+    let data = std::fs::read(vdf_path).map_err(|error| format!("read {}: {}", vdf_path, error))?;
+
+    let index = max_entry_index(&data) + 1;
+
+    let mut entry: Vec<u8> = Vec::new();
+
+    entry.push(0);
+
+    entry.extend_from_slice(index.to_string().as_bytes());
+
+    entry.push(0);
+
+    entry.extend_from_slice(&vdf_int("appid", appid));
+
+    entry.extend_from_slice(&vdf_string("AppName", app_name));
+
+    entry.extend_from_slice(&vdf_string("Exe", &format!("\"{}\"", exe_path)));
+
+    entry.extend_from_slice(&vdf_string("StartDir", start_dir));
+
+    entry.extend_from_slice(&vdf_string("icon", ""));
+
+    entry.extend_from_slice(&vdf_string("ShortcutPath", ""));
+
+    entry.extend_from_slice(&vdf_string("LaunchOptions", launch_options));
+
+    entry.extend_from_slice(&vdf_int("IsHidden", 0));
+
+    entry.extend_from_slice(&vdf_int("AllowDesktopConfig", 1));
+
+    entry.extend_from_slice(&vdf_int("AllowOverlay", 1));
+
+    entry.extend_from_slice(&vdf_int("OpenVR", 0));
+
+    entry.extend_from_slice(&vdf_int("Devkit", 0));
+
+    entry.extend_from_slice(&vdf_string("DevkitGameID", ""));
+
+    entry.extend_from_slice(&vdf_int("DevkitOverrideAppID", 0));
+
+    entry.extend_from_slice(&vdf_int("LastPlayTime", 0));
+
+    entry.extend_from_slice(&vdf_string("FlatpakAppID", ""));
+
+    entry.extend_from_slice(&vdf_string("sortas", ""));
+
+    entry.push(0);
+
+    entry.extend_from_slice(b"tags");
+
+    entry.push(0);
+
+    entry.push(8);
+
+    entry.push(8);
+
+    if data.len() < 2 || data[data.len() - 2..] != [8u8, 8u8] {
+
+        return Err(String::from("vdf does not end with two map terminators"));
+
+    }
+
+    let mut out = data[..data.len() - 2].to_vec();
+
+    out.extend_from_slice(&entry);
+
+    out.push(8);
+
+    out.push(8);
+
+    backup_vdf(vdf_path, &data)?;
+
+    std::fs::write(vdf_path, &out).map_err(|error| format!("write {}: {}", vdf_path, error))?;
+
+    let verify = std::fs::read(vdf_path).map_err(|error| format!("re-read {}: {}", vdf_path, error))?;
+
+    let appid_marker = vdf_int("appid", appid);
+
+    if find_subslice(&verify, &appid_marker, 0).is_none() {
+
+        return Err(String::from("verification failed: appid not found after write"));
+
+    }
+
+    Ok(())
+
+}
+
 #[cfg(test)]
 #[path = "shortcut_add_tests.rs"]
 mod shortcut_add_tests;

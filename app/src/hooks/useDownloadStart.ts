@@ -80,7 +80,7 @@ export function useDownloadStart({
 
     setView("downloads");
 
-    invoke<string>("start_torrent_download", { title: safeTitle, laneUrl: torrentLane.url })
+    invoke<string>("start_torrent_download", { title: safeTitle, laneUrl: torrentLane.url, build: gameDetail?.build || null })
 
       .catch((reason: unknown) => {
 
@@ -104,7 +104,7 @@ export function useDownloadStart({
 
   }
 
-  function startHttp(game: GameEntry, hostersUrl: string) {
+  function startHttp(game: GameEntry, hostersUrl: string, build?: string | null) {
 
     if (isBusy(game.pageUrl)) {
 
@@ -128,7 +128,7 @@ export function useDownloadStart({
 
     setView("downloads");
 
-    invoke<string>("start_http_download", { title: safeTitle, laneUrl: hostersUrl })
+    invoke<string>("start_http_download", { title: safeTitle, laneUrl: hostersUrl, build: build ?? null })
 
       .catch((reason: unknown) => {
 
@@ -158,7 +158,7 @@ export function useDownloadStart({
 
     if (hostersLane) {
 
-      startHttp(game, hostersLane.url);
+      startHttp(game, hostersLane.url, gameDetail.build || null);
 
       return;
 

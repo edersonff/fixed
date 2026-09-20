@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -64,7 +64,25 @@ export default function App() {
 
   });
 
-  const library = useInstalledGames(view === "library");
+  const library = useInstalledGames(view === "library" || selected !== null);
+
+  const installedBuild = useMemo(() => {
+
+    if (!selected) {
+
+      return null;
+
+    }
+
+    const searchKey = selected.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    return library.games.find(
+
+      (game) => game.title.toLowerCase().replace(/[^a-z0-9]/g, "") === searchKey,
+
+    )?.build ?? null;
+
+  }, [library.games, selected]);
 
   function pickLane(lane: DownloadLane) {
 
@@ -76,7 +94,7 @@ export default function App() {
 
     if (lane.kind === "hosters") {
 
-      downloads.startHttp(selected, lane.url);
+      downloads.startHttp(selected, lane.url, detail?.build || null);
 
       return;
 
@@ -133,6 +151,8 @@ export default function App() {
             detail={detail}
 
             busy={detailBusy}
+
+            installedBuild={installedBuild}
 
             onBack={() => setSelected(null)}
 

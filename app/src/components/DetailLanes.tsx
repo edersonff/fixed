@@ -32,6 +32,8 @@ export function DetailLanes({
 
   installed,
 
+  updateAvailable,
+
   launching,
 
   onPlay,
@@ -47,6 +49,8 @@ export function DetailLanes({
   onLanePick: (lane: DownloadLane) => void;
 
   installed: boolean;
+
+  updateAvailable: boolean;
 
   launching: boolean;
 
@@ -67,6 +71,8 @@ export function DetailLanes({
           <h2>Choose a Source</h2>
 
         </div>
+
+        {updateAvailable && <span className="chip">Update available</span>}
 
         <motion.button
 

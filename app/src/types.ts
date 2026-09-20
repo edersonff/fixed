@@ -114,6 +114,8 @@ export type InstalledGame = {
 
   hasPlugins: boolean;
 
+  build?: string | null;
+
 };
 
 export type View = "home" | "library" | "downloads";

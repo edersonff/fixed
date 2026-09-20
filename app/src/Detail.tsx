@@ -36,6 +36,8 @@ export function DetailView({
 
   busy,
 
+  installedBuild,
+
   onBack,
 
   onDownload,
@@ -49,6 +51,8 @@ export function DetailView({
   detail: GameDetail | null;
 
   busy: boolean;
+
+  installedBuild: string | null;
 
   onBack: () => void;
 
@@ -71,6 +75,10 @@ export function DetailView({
   const [logoFailed, setLogoFailed] = useState(false);
 
   const installed = useIsGameInstalled(game.title);
+
+  const siteBuild = detail?.build.trim() ?? "";
+
+  const updateAvailable = installed && installedBuild !== null && siteBuild !== "" && siteBuild !== installedBuild;
 
   const { launching, launch } = useGameLaunch(game.title);
 
@@ -143,6 +151,8 @@ export function DetailView({
           onLanePick={onLanePick}
 
           installed={installed}
+
+          updateAvailable={updateAvailable}
 
           launching={launching}
 

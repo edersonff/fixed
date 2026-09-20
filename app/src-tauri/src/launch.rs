@@ -48,7 +48,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
         let mut tries = 0;
 
-        while !crate::steam_ipc::cef_port_open() && tries < 45 {
+        while !crate::steam_ipc::cef_shared_js_ready() && tries < 45 {
 
             crate::launch_progress::emit_progress(app, title, "waiting-steam", &format!("steam client {}s", tries * 2));
 
@@ -58,57 +58,145 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
         }
 
-        if !crate::steam_ipc::cef_port_open() {
+        if !crate::steam_ipc::cef_shared_js_ready() {
 
-            return Err(String::from("cef debugging port never opened"));
+            return Err(String::from("cef debugging target never appeared"));
 
         }
+
+        std::thread::sleep(std::time::Duration::from_secs(12));
 
     }
 
     let (vdf, root) = steam_paths()?;
 
-    let mut appid = fix_core::find_shortcut_appid_by_exe(&vdf, exe);
+    let mut canonical: Option<u32> = None;
 
-    if let Some(found) = appid {
+    for disk_id in fix_core::find_shortcut_appids_by_exe(&vdf, exe) {
 
-        if !crate::steam_ipc::cef_app_known(found).await? {
+        for attempt in 0..3 {
 
-            flog(&format!("[LAUNCH] {}: appid {} unknown to running steam, re-registering", title, found));
+            if crate::steam_ipc::cef_app_known(disk_id).await? {
 
-            appid = None;
+                canonical = Some(disk_id);
+
+                break;
+
+            }
+
+            if attempt < 2 {
+
+                std::thread::sleep(std::time::Duration::from_secs(3));
+
+            }
+
+        }
+
+        if canonical.is_some() {
+
+            break;
 
         }
 
     }
 
-    if appid.is_none() {
+    let appid = match canonical {
 
-        crate::launch_progress::emit_progress(app, title, "registering", "");
+        Some(known) => known,
 
-        appid = Some(crate::steam_ipc::cef_add_shortcut(title, exe).await?);
+        None => {
 
-        let new_appid = appid.unwrap_or_default();
+            crate::launch_progress::emit_progress(app, title, "registering", "");
 
-        crate::steam_ipc::cef_set_launch_options(new_appid, fix_core::ONLINE_FIX_LAUNCH_OPTIONS).await?;
+            let emitted = crate::steam_ipc::cef_add_shortcut(title, exe).await?;
 
-    }
+            crate::steam_ipc::cef_set_launch_options(emitted, fix_core::ONLINE_FIX_LAUNCH_OPTIONS).await?;
 
-    let appid = appid.ok_or_else(|| String::from("no shortcut appid"))?;
+            let _ = crate::steam_ipc::cef_remove_shortcut(emitted).await;
 
-    if !fix_core::is_compat_tool_mapped(&root.to_string_lossy(), appid) {
+            crate::steam_client::shutdown_full()?;
+
+            crate::write_stable_shortcut(title, exe, emitted)?;
+
+            fix_core::ensure_compat_tool(&root.to_string_lossy(), emitted, fix_core::DEFAULT_COMPAT_TOOL)?;
+
+            for orphan in [3496708822u32, 3805198223, 3665257087, 3148280713] {
+
+                let _ = fix_core::remove_compat_tool(&root.to_string_lossy(), orphan);
+
+            }
+
+            crate::launch_progress::emit_progress(app, title, "starting-steam", "");
+
+            crate::steam_client::start_silent()?;
+
+            if !crate::launch_progress::wait_with_progress(app, title) {
+
+                return Err(String::from("steam did not come up after stable registration"));
+
+            }
+
+            let mut tries = 0;
+
+            while !crate::steam_ipc::cef_port_open() && tries < 45 {
+
+                crate::launch_progress::emit_progress(app, title, "waiting-steam", &format!("steam client {}s", tries * 2));
+
+                std::thread::sleep(std::time::Duration::from_secs(2));
+
+                tries += 1;
+
+            }
+
+            std::thread::sleep(std::time::Duration::from_secs(12));
+
+            if !crate::steam_ipc::cef_app_known(emitted).await? {
+
+                return Err(String::from("stable shortcut not recognized after steam reload; restart steam and try again"));
+
+            }
+
+            emitted
+
+        }
+
+    };
+
+    let mapped = fix_core::is_compat_tool_mapped(&root.to_string_lossy(), appid);
+
+    flog(&format!("[LAUNCH] {}: compat tool mapped for appid {}: {}", title, appid, mapped));
+
+    if !mapped {
 
         if crate::steam_client::is_steam_running() {
 
             crate::launch_progress::emit_progress(app, title, "stopping-steam", "");
 
-            crate::steam_client::shutdown()?;
+            crate::steam_client::shutdown_full()?;
 
         }
 
         crate::launch_progress::emit_progress(app, title, "registering", "");
 
         fix_core::ensure_compat_tool(&root.to_string_lossy(), appid, fix_core::DEFAULT_COMPAT_TOOL)?;
+
+        flog(&format!("[LAUNCH] {}: compat mapping written for appid {}", title, appid));
+
+        let mut close_tries = 0;
+
+        while crate::steam_ipc::cef_port_open() && close_tries < 15 {
+
+            std::thread::sleep(std::time::Duration::from_secs(1));
+
+            close_tries += 1;
+
+        }
+
+        if crate::steam_ipc::cef_port_open() {
+
+            flog(&format!("[LAUNCH] {}: cef port still open after steam shutdown, restart may race", title));
+
+        }
 
         crate::launch_progress::emit_progress(app, title, "starting-steam", "");
 
@@ -131,6 +219,8 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
             tries += 1;
 
         }
+
+        std::thread::sleep(std::time::Duration::from_secs(12));
 
     }
 
@@ -180,7 +270,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
 }
 
-fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<String, String> {
+async fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<String, String> {
 
     if !crate::steam_client::is_steam_running() {
 
@@ -216,27 +306,69 @@ fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Result<Stri
 
     }
 
-    if crate::steam_ipc::cef_port_open() {
+    if !crate::steam_ipc::cef_port_open() {
 
-        std::thread::sleep(std::time::Duration::from_secs(12));
+        let message = String::from("steam debug port unavailable; launch could not be verified. restart steam and try again");
 
-    } else {
+        flog(&format!("[LAUNCH] {}: {}", title, message));
 
-        std::thread::sleep(std::time::Duration::from_secs(15));
+        return Err(message);
 
     }
 
-    crate::launch_progress::emit_progress(app, title, "launching", "");
+    std::thread::sleep(std::time::Duration::from_secs(12));
 
-    let (vdf, _) = steam_paths()?;
+    crate::launch_progress::emit_progress(app, title, "launching", "");
 
     let exe = fix_core::find_game_exe(folder).ok_or_else(|| String::from("game exe not found"))?;
 
-    let appid = fix_core::find_shortcut_appid_by_exe(&vdf, &exe)
+    let (vdf, _) = steam_paths()?;
+
+    let mut appid = fix_core::find_shortcut_appid_by_exe(&vdf, &exe)
 
         .or_else(|| fix_core::find_shortcut_appid(&vdf, title))
 
         .ok_or_else(|| String::from("game not registered in steam yet — close and reopen steam, then press play again"))?;
+
+    if !crate::steam_ipc::cef_app_known(appid).await? {
+
+        flog(&format!("[LAUNCH] {}: appid {} diverged from running steam, restarting steam to reload shortcuts", title, appid));
+
+        crate::steam_client::shutdown()?;
+
+        crate::launch_progress::emit_progress(app, title, "starting-steam", "");
+
+        crate::steam_client::start_silent()?;
+
+        if !crate::launch_progress::wait_with_progress(app, title) {
+
+            return Err(String::from("steam did not come back after reload"));
+
+        }
+
+        let mut tries = 0;
+
+        while !crate::steam_ipc::cef_port_open() && tries < 45 {
+
+            crate::launch_progress::emit_progress(app, title, "waiting-steam", &format!("steam client {}s", tries * 2));
+
+            std::thread::sleep(std::time::Duration::from_secs(2));
+
+            tries += 1;
+
+        }
+
+        std::thread::sleep(std::time::Duration::from_secs(12));
+
+        let (vdf, _) = steam_paths()?;
+
+        appid = fix_core::find_shortcut_appid_by_exe(&vdf, &exe)
+
+            .or_else(|| fix_core::find_shortcut_appid(&vdf, title))
+
+            .ok_or_else(|| String::from("shortcut missing after steam reload"))?;
+
+    }
 
     let url = format!("steam://rungameid/{}", fix_core::shortcut_gameid(appid));
 
@@ -277,7 +409,7 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
             flog(&format!("[LAUNCH] {}: CEF flow failed ({}), falling back to legacy vdf flow", title, cef_error));
 
-            legacy_flow(app, title, &folder)
+            legacy_flow(app, title, &folder).await
 
         }
 
