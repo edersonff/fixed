@@ -84,7 +84,87 @@ pub fn is_steam_ready() -> bool {
 
 }
 
+// Steam spawned from a bundled app (AppImage/deb) inherits the bundle's LD_LIBRARY_PATH and PATH;
+// with those entries Steam configures compat sessions but every child spawn dies before exec
+// (measured 2026-09-20: sessions released in 3-14s, zero execve, no proton log; same shortcuts
+// launch fine under a desktop-started Steam). Steam rebuilds its own LD_LIBRARY_PATH, so the
+// inherited one is dropped whole; PATH only loses the bundle entries.
+#[cfg(not(windows))]
+fn bundle_markers() -> Vec<String> {
+
+    let mut markers = vec![String::from("squashfs-root"), String::from(".mount_"), String::from("AppDir")];
+
+    if let Some(dir) = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|d| d.to_path_buf())) {
+
+        let text = dir.to_string_lossy().into_owned();
+
+        // a deb install lives in /usr/bin, which as a marker would strip /usr/bin itself from PATH
+
+        let is_system_dir = ["/usr/bin", "/bin", "/usr/local/bin", "/usr/sbin", "/sbin"].contains(&text.as_str());
+
+        if !is_system_dir {
+
+            markers.push(text);
+
+        }
+
+    }
+
+    markers
+
+}
+
+#[cfg(any(not(windows), test))]
+pub(crate) fn strip_bundle_paths(value: &str, markers: &[String]) -> String {
+
+    let kept: Vec<std::path::PathBuf> = std::env::split_paths(value)
+
+        .filter(|entry| {
+
+            if entry.as_os_str().is_empty() {
+
+                return false;
+
+            }
+
+            let text = entry.to_string_lossy();
+
+            !markers.iter().any(|marker| text.contains(marker.as_str()))
+
+        })
+
+        .collect();
+
+    std::env::join_paths(kept)
+
+        .map(|joined| joined.into_string().unwrap_or_default())
+
+        .unwrap_or_default()
+
+}
+
+#[cfg(not(windows))]
+fn sanitize_env(command: &mut Command) {
+
+    command.env_remove("LD_LIBRARY_PATH");
+
+    let markers = bundle_markers();
+
+    if let Ok(path) = std::env::var("PATH") {
+
+        let clean = strip_bundle_paths(&path, &markers);
+
+        command.env("PATH", if clean.is_empty() { String::from("/usr/local/bin:/usr/bin:/bin") } else { clean });
+
+    }
+
+}
+
 fn spawn_steam(command: &mut Command) -> Result<(), String> {
+
+    #[cfg(not(windows))]
+
+    sanitize_env(command);
 
     command
         .stdin(Stdio::null())
