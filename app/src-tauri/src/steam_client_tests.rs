@@ -81,3 +81,25 @@ fn strip_bundle_paths_strips_every_ld_library_entry_of_the_bundle() {
     assert_eq!(clean, "/opt/cuda/lib64");
 
 }
+
+#[test]
+fn carries_bundle_path_detects_pythonhome_pointing_into_bundle() {
+
+    let markers = vec![String::from("squashfs-root"), String::from(".mount_")];
+
+    let polluted = "/home/eder/.cache/pub-e2e/squashfs-root/usr/";
+
+    assert!(carries_bundle_path(polluted, &markers));
+
+}
+
+#[test]
+fn carries_bundle_path_false_for_system_values() {
+
+    let markers = vec![String::from("squashfs-root"), String::from(".mount_")];
+
+    assert!(!carries_bundle_path("/usr/share:/home/eder/.local/share", &markers));
+
+    assert!(!carries_bundle_path("", &markers));
+
+}

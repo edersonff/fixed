@@ -84,11 +84,13 @@ pub fn is_steam_ready() -> bool {
 
 }
 
-// Steam spawned from a bundled app (AppImage/deb) inherits the bundle's LD_LIBRARY_PATH and PATH;
-// with those entries Steam configures compat sessions but every child spawn dies before exec
-// (measured 2026-09-20: sessions released in 3-14s, zero execve, no proton log; same shortcuts
-// launch fine under a desktop-started Steam). Steam rebuilds its own LD_LIBRARY_PATH, so the
-// inherited one is dropped whole; PATH only loses the bundle entries.
+// Steam spawned from a bundled app (AppImage/deb) inherits the bundle's env; with those entries
+// Steam configures compat sessions but every child spawn dies before exec (measured 2026-09-20:
+// sessions released in 3-14s, zero execve, no proton log; same shortcuts launch fine under a
+// desktop-started Steam). Vectors measured: LD_LIBRARY_PATH (webview libs) AND AppRun exports
+// like PYTHONHOME/PYTHONPATH pointing into the bundle, which kill Proton's python wrapper at
+// spawn. So: LD drops whole (Steam rebuilds its own), and ANY var whose value carries a bundle
+// path drops too; PATH only loses the bundle entries (Steam needs a working PATH).
 #[cfg(not(windows))]
 fn bundle_markers() -> Vec<String> {
 
@@ -143,12 +145,35 @@ pub(crate) fn strip_bundle_paths(value: &str, markers: &[String]) -> String {
 
 }
 
+#[cfg(any(not(windows), test))]
+pub(crate) fn carries_bundle_path(value: &str, markers: &[String]) -> bool {
+
+    markers.iter().any(|marker| value.contains(marker.as_str()))
+
+}
+
 #[cfg(not(windows))]
 fn sanitize_env(command: &mut Command) {
 
     command.env_remove("LD_LIBRARY_PATH");
 
+    command.env_remove("LD_PRELOAD");
+
     let markers = bundle_markers();
+
+    for (key, value) in std::env::vars_os() {
+
+        let Some(text) = value.to_str() else { continue };
+
+        let Some(name) = key.to_str() else { continue };
+
+        if name != "PATH" && carries_bundle_path(text, &markers) {
+
+            command.env_remove(name);
+
+        }
+
+    }
 
     if let Ok(path) = std::env::var("PATH") {
 

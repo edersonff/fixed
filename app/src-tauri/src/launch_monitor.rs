@@ -119,6 +119,8 @@ pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32,
 
         let message = format!("no reaper process for appid {} within {}s of RunGame", appid, REAPER_TIMEOUT.as_secs());
 
+        flog(&format!("[LAUNCH] {}: {}", title, message));
+
         crate::launch_progress::emit_progress(app, title, "failed", &message);
 
         return Err(message);
@@ -130,6 +132,8 @@ pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32,
     let Some(pid) = poll_until_some(GAME_PID_TIMEOUT, FAST_POLL, || crate::game_process::find_game_pid(&basename)) else {
 
         let message = format!("steam began the launch but {} never appeared within {}s", basename, GAME_PID_TIMEOUT.as_secs());
+
+        flog(&format!("[LAUNCH] {}: {}", title, message));
 
         crate::launch_progress::emit_progress(app, title, "failed", &message);
 
