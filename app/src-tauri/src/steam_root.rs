@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+#[cfg(not(windows))]
 const FLATPAK_MARKER: &str = "com.valvesoftware.Steam";
 
 // steamlocate covers native, Flatpak, Snap and debian-installation on Linux and the HKLM
@@ -31,6 +32,7 @@ pub fn steam_root() -> Option<PathBuf> {
 
 }
 
+#[cfg(not(windows))]
 pub fn is_flatpak_steam(root: &std::path::Path) -> bool {
 
     root.to_string_lossy().contains(FLATPAK_MARKER)
