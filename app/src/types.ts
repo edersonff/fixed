@@ -118,6 +118,10 @@ export type InstalledGame = {
 
   missingFiles: number;
 
+  canRestore: boolean;
+
+  downloadBytes: number;
+
 };
 
 export type View = "home" | "library" | "downloads";
@@ -125,6 +129,16 @@ export type View = "home" | "library" | "downloads";
 export type GameFilesStatus = {
 
   missing: string[];
+
+  canRestore: boolean;
+
+};
+
+export type RestoreOutcome = {
+
+  missing: string[];
+
+  removedAgain: boolean;
 
   canRestore: boolean;
 

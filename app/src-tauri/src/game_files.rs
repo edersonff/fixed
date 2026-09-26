@@ -6,19 +6,24 @@ use crate::flog;
 
 const MANIFEST: &str = ".fixed-files";
 
-// Measured 2026-09-26 in the Windows lab: detection logged 11s after extraction began and the files
-// were still on disk 8s after that, so no short wait is safe; the archive goes only a minute after a
-// confirmed launch.
-const RELEASE_DELAY: std::time::Duration = std::time::Duration::from_secs(60);
+// Measured 2026-09-26 in the Windows lab: a restored file gets removed again 11-20s after it lands,
+// so the watch has to span the full window in short steps rather than one settle-and-check.
+const WATCH_STEP: std::time::Duration = std::time::Duration::from_secs(2);
 
-const SETTLE_CHECKS: u32 = 4;
-
-const SETTLE_STEP: std::time::Duration = std::time::Duration::from_secs(2);
+const WATCH_CHECKS: u32 = 10;
 
 #[derive(serde::Serialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GameFilesStatus {
     pub missing: Vec<String>,
+    pub can_restore: bool,
+}
+
+#[derive(serde::Serialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreOutcome {
+    pub missing: Vec<String>,
+    pub removed_again: bool,
     pub can_restore: bool,
 }
 
@@ -35,6 +40,12 @@ pub(crate) fn archive_in(folder: &Path) -> Option<PathBuf> {
     rars.sort_by_key(|path| std::cmp::Reverse(path.metadata().map(|meta| meta.len()).unwrap_or(0)));
 
     rars.into_iter().next()
+
+}
+
+pub fn download_bytes(folder: &Path) -> u64 {
+
+    archive_in(folder).and_then(|path| path.metadata().ok()).map(|meta| meta.len()).unwrap_or(0)
 
 }
 
@@ -62,46 +73,8 @@ pub fn missing_files(folder: &Path) -> Vec<String> {
 
 }
 
-fn settle_and_check(folder: &Path) -> Vec<String> {
-
-    let mut missing = missing_files(folder);
-
-    let checks = if cfg!(windows) { SETTLE_CHECKS } else { 0 };
-
-    for _ in 0..checks {
-
-        std::thread::sleep(SETTLE_STEP);
-
-        missing = missing_files(folder);
-
-    }
-
-    missing
-
-}
-
-#[derive(Debug, PartialEq)]
-pub(crate) enum ArchiveDecision {
-    Keep,
-    Delete,
-}
-
-// The archive stays until every listed file is still on disk after the settle; otherwise it is the
-// only source the restore can pull the removed files back from.
-pub(crate) fn archive_decision(missing: &[String]) -> ArchiveDecision {
-
-    if missing.is_empty() {
-
-        ArchiveDecision::Delete
-
-    } else {
-
-        ArchiveDecision::Keep
-
-    }
-
-}
-
+// The archive is never deleted for the player: it is the only source a restore can pull removed
+// files back from, and the owner ruled there is no reason to delete it as part of this flow at all.
 fn after_extract(title: &str, folder: &str) {
 
     let folder_path = Path::new(folder);
@@ -128,26 +101,6 @@ fn after_extract(title: &str, folder: &str) {
 
     }
 
-    if cfg!(windows) {
-
-        flog(&format!("[FILES] {}: archive kept until the first confirmed launch", title));
-
-        return;
-
-    }
-
-    let missing = missing_files(folder_path);
-
-    if archive_decision(&missing) == ArchiveDecision::Delete {
-
-        crate::delete_installers(folder);
-
-        return;
-
-    }
-
-    flog(&format!("[FILES] {}: {} files missing after extraction: {}", title, missing.len(), missing.join(", ")));
-
 }
 
 pub fn extract_and_verify(title: &str, folder: &str) -> Result<u32, String> {
@@ -160,24 +113,6 @@ pub fn extract_and_verify(title: &str, folder: &str) -> Result<u32, String> {
 
 }
 
-pub fn release_archive_if_intact(title: &str, folder: &str) {
-
-    std::thread::sleep(RELEASE_DELAY);
-
-    let missing = settle_and_check(Path::new(folder));
-
-    if archive_decision(&missing) == ArchiveDecision::Delete {
-
-        crate::delete_installers(folder);
-
-        return;
-
-    }
-
-    flog(&format!("[FILES] {}: {} files missing after launch: {}", title, missing.len(), missing.join(", ")));
-
-}
-
 pub fn status(folder: &Path) -> GameFilesStatus {
 
     GameFilesStatus {
@@ -187,28 +122,62 @@ pub fn status(folder: &Path) -> GameFilesStatus {
 
 }
 
-pub fn restore(title: &str, folder: &Path) -> Result<GameFilesStatus, String> {
+// Pure: given the files a restore just wrote back and what is missing at a later check, true means
+// at least one of them vanished again. This is the only signal that real-time protection is on —
+// no system query, ever.
+pub(crate) fn files_removed_again(restored: &[String], missing_now: &[String]) -> bool {
 
-    let missing = missing_files(folder);
+    restored.iter().any(|entry| missing_now.contains(entry))
 
-    let archive = archive_in(folder).ok_or_else(|| String::from(crate::user_error::ARCHIVE_GONE))?;
+}
 
-    let count = fix_core::extract_entries(&archive.to_string_lossy(), &folder.to_string_lossy(), &missing)?;
+pub fn restore(title: &str, folder: &Path) -> Result<RestoreOutcome, String> {
 
-    flog(&format!("[FILES] {}: restored {} of {} missing files", title, count, missing.len()));
+    let missing_before = missing_files(folder);
 
-    let after = settle_and_check(folder);
+    let Some(archive) = archive_in(folder) else {
 
-    if archive_decision(&after) == ArchiveDecision::Delete {
+        flog(&format!("[FILES] {}: no archive kept, restore not possible", title));
 
-        crate::delete_installers(&folder.to_string_lossy());
+        return Ok(RestoreOutcome { missing: missing_before, removed_again: false, can_restore: false });
+
+    };
+
+    let count = fix_core::extract_entries(&archive.to_string_lossy(), &folder.to_string_lossy(), &missing_before)?;
+
+    flog(&format!("[FILES] {}: restored {} of {} missing files", title, count, missing_before.len()));
+
+    let missing_after_extract = missing_files(folder);
+
+    let restored: Vec<String> = missing_before
+        .iter()
+        .filter(|entry| !missing_after_extract.contains(entry))
+        .cloned()
+        .collect();
+
+    let mut removed_again = false;
+
+    let checks = if cfg!(windows) { WATCH_CHECKS } else { 0 };
+
+    for _ in 0..checks {
+
+        std::thread::sleep(WATCH_STEP);
+
+        if files_removed_again(&restored, &missing_files(folder)) {
+
+            removed_again = true;
+
+        }
 
     }
 
-    Ok(GameFilesStatus {
-        missing: after,
-        can_restore: archive_in(folder).is_some(),
-    })
+    if removed_again {
+
+        flog(&format!("[FILES] {}: restored files vanished again during the watch", title));
+
+    }
+
+    Ok(RestoreOutcome { missing: missing_files(folder), removed_again, can_restore: archive_in(folder).is_some() })
 
 }
 
@@ -224,13 +193,32 @@ pub async fn game_files_status(title: String) -> Result<GameFilesStatus, String>
 }
 
 #[tauri::command]
-pub async fn restore_game_files(title: String) -> Result<GameFilesStatus, String> {
+pub async fn restore_game_files(title: String) -> Result<RestoreOutcome, String> {
 
     let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
 
     tokio::task::spawn_blocking(move || restore(&title, Path::new(&folder)))
         .await
         .map_err(|error| format!("join: {}", error))?
+
+}
+
+#[tauri::command]
+pub async fn delete_game_download(title: String) -> Result<u64, String> {
+
+    let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
+
+    tokio::task::spawn_blocking(move || {
+
+        let bytes = download_bytes(Path::new(&folder));
+
+        crate::delete_installers(&folder);
+
+        bytes
+
+    })
+        .await
+        .map_err(|error| format!("join: {}", error))
 
 }
 

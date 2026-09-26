@@ -4,8 +4,6 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { refreshInstalledTitles } from "../lib/installedGames";
 
-import { getRepairTitle, subscribeRepair } from "../lib/repairStore";
-
 import type { InstalledGame } from "../types";
 
 export function useInstalledGames(active: boolean) {
@@ -45,26 +43,6 @@ export function useInstalledGames(active: boolean) {
       refresh();
 
     }
-
-  }, [active, refresh]);
-
-  useEffect(() => {
-
-    if (!active) {
-
-      return;
-
-    }
-
-    return subscribeRepair(() => {
-
-      if (getRepairTitle() === null) {
-
-        refresh();
-
-      }
-
-    });
 
   }, [active, refresh]);
 

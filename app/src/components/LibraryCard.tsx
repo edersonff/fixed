@@ -18,6 +18,8 @@ import { useGameAssets } from "../hooks/useGameAssets";
 
 import { useGameLaunch } from "../hooks/useGameLaunch";
 
+import { useFreeDownload } from "../hooks/useFreeDownload";
+
 import { useGameUninstall } from "../hooks/useGameUninstall";
 
 import { usePluginInstall } from "../hooks/usePluginInstall";
@@ -25,8 +27,6 @@ import { usePluginInstall } from "../hooks/usePluginInstall";
 import { diskSize, displayTitle } from "../lib/format";
 
 import { fadeRiseVariants } from "../lib/motion";
-
-import { openRepair } from "../lib/repairStore";
 
 import type { InstalledGame } from "../types";
 
@@ -67,6 +67,8 @@ export function LibraryCard({
   const { confirming, setConfirming, uninstalling, uninstallMsg, setUninstallMsg, handleUninstall } =
 
     useGameUninstall(game.title, onUninstalled);
+
+  const { freeing, freeDownload } = useFreeDownload(game.title, onUninstalled);
 
   return (
 
@@ -193,25 +195,21 @@ export function LibraryCard({
 
           </p>
 
+          {game.missingFiles > 0 && (
+
+            <p className="lib-files-missing">{game.missingFiles === 1 ? "1 file missing" : `${game.missingFiles} files missing`}</p>
+
+          )}
+
           <LibraryCardActions
 
             launching={launching}
 
             phase={phase}
 
-            needsRepair={game.missingFiles > 0}
-
             onLaunch={(event) => {
 
               event.stopPropagation();
-
-              if (game.missingFiles > 0) {
-
-                openRepair(game.title);
-
-                return;
-
-              }
 
               launch();
 
@@ -234,6 +232,32 @@ export function LibraryCard({
             }}
 
           />
+
+          {game.downloadBytes > 0 && (
+
+            <button
+
+              type="button"
+
+              className="ghost lib-free-download"
+
+              disabled={freeing}
+
+              onClick={(event) => {
+
+                event.stopPropagation();
+
+                freeDownload();
+
+              }}
+
+            >
+
+              {freeing ? "Freeing…" : `Free ${diskSize(game.downloadBytes)}`}
+
+            </button>
+
+          )}
 
           <LibraryCardNote launchMsg={launchMsg} pluginMsg={pluginMsg} uninstallMsg={uninstallMsg} phase={phase} />
 

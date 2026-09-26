@@ -48,16 +48,41 @@ fn archive_in_ignores_files_that_are_not_rar() {
 }
 
 #[test]
-fn archive_decision_deletes_when_nothing_missing() {
+fn download_bytes_is_zero_without_an_archive() {
 
-    assert_eq!(archive_decision(&[]), ArchiveDecision::Delete);
+    let dir = tempfile::tempdir().unwrap();
+
+    assert_eq!(download_bytes(dir.path()), 0);
 
 }
 
 #[test]
-fn archive_decision_keeps_when_files_missing() {
+fn download_bytes_reports_the_kept_archive_size() {
 
-    assert_eq!(archive_decision(&[String::from("Game/OnlineFix64.dll")]), ArchiveDecision::Keep);
+    let dir = tempfile::tempdir().unwrap();
+
+    std::fs::write(dir.path().join("real.rar"), b"Rar!\x1a\x07\x01\x00rest").unwrap();
+
+    assert_eq!(download_bytes(dir.path()), 12);
 
 }
 
+#[test]
+fn files_removed_again_is_true_when_a_restored_file_reappears_as_missing() {
+
+    let restored = vec![String::from("Game/OnlineFix64.dll"), String::from("Game/winmm.dll")];
+
+    let missing_now = vec![String::from("Game/OnlineFix64.dll")];
+
+    assert!(files_removed_again(&restored, &missing_now));
+
+}
+
+#[test]
+fn files_removed_again_is_false_when_the_restored_files_stay() {
+
+    let restored = vec![String::from("Game/OnlineFix64.dll"), String::from("Game/winmm.dll")];
+
+    assert!(!files_removed_again(&restored, &[]));
+
+}

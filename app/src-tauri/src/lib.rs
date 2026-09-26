@@ -299,7 +299,7 @@ pub fn run() {
 
         })
 
-        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game, game_files::game_files_status, game_files::restore_game_files])
+        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game, game_files::game_files_status, game_files::restore_game_files, game_files::delete_game_download])
 
         .run(tauri::generate_context!())
 
