@@ -74,6 +74,7 @@ fn uninstall_game_rejects_a_missing_folder() {
 
 }
 
+#[cfg(unix)]
 #[test]
 fn uninstall_game_rejects_a_symlink_and_deletes_nothing() {
 
