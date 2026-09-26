@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { FolderOpen, Play, Puzzle, Wrench } from "lucide-react";
 
+import { FixBlockedNote } from "./FixBlockedNote";
+
 import { actionHover, actionPressDown, stateVariants } from "../lib/motion";
 
 export function LibraryCardActions({
@@ -11,6 +13,8 @@ export function LibraryCardActions({
   busy,
 
   needsFix,
+
+  removedAgain,
 
   onPress,
 
@@ -25,6 +29,8 @@ export function LibraryCardActions({
   busy: boolean;
 
   needsFix: boolean;
+
+  removedAgain: boolean;
 
   onPress: (event: React.MouseEvent) => void;
 
@@ -71,6 +77,8 @@ export function LibraryCardActions({
         </AnimatePresence>
 
       </motion.button>
+
+      {removedAgain && <FixBlockedNote />}
 
       <button type="button" className="ghost" onClick={onAddPlugin}>
 

@@ -10,7 +10,21 @@ export function FixBlockedNote() {
 
     <div className="fix-blocked">
 
-      <button type="button" className="ghost" onClick={() => openUrl(DEFENDER_SETTINGS_URL).catch(() => undefined)}>
+      <button
+
+        type="button"
+
+        className="ghost"
+
+        onClick={(event: React.MouseEvent) => {
+
+          event.stopPropagation();
+
+          openUrl(DEFENDER_SETTINGS_URL).catch(() => undefined);
+
+        }}
+
+      >
 
         Turn off Windows protection
 

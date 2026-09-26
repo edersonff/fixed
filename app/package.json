@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test": "node --experimental-strip-types src/lib/artQuality.test.ts && node --experimental-strip-types src/lib/titleKey.test.ts && node --experimental-strip-types src/lib/fixState.test.ts && node --experimental-strip-types src/lib/fixErrors.test.ts"
+    "test": "node --experimental-strip-types src/lib/artQuality.test.ts && node --experimental-strip-types src/lib/titleKey.test.ts && node --experimental-strip-types src/lib/fixState.test.ts && node --experimental-strip-types src/lib/fixErrors.test.ts && node --experimental-strip-types src/lib/downloads.test.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

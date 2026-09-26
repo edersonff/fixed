@@ -8,8 +8,6 @@ import { Trash2 } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
 
-import { FixBlockedNote } from "./FixBlockedNote";
-
 import { LibraryCardActions } from "./LibraryCardActions";
 
 import { LibraryCardNote } from "./LibraryCardNote";
@@ -201,6 +199,8 @@ export function LibraryCard({
 
             needsFix={needsFix}
 
+            removedAgain={removedAgain}
+
             onPress={(event) => {
 
               event.stopPropagation();
@@ -226,8 +226,6 @@ export function LibraryCard({
             }}
 
           />
-
-          {removedAgain && <FixBlockedNote />}
 
           <LibraryCardNote launchMsg={launchMsg} pluginMsg={pluginMsg} uninstallMsg={uninstallMsg} />
 
