@@ -2,8 +2,6 @@ use crate::flog;
 use crate::DownloadEngine;
 use crate::DownloadProgress;
 use crate::add_game_to_steam;
-use crate::delete_installers;
-use crate::extract_first_rar;
 use crate::log_fail;
 use tauri::Emitter;
 use tauri::Manager;
@@ -226,7 +224,9 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
                 let extract_folder = pipeline_folder.clone();
 
-                let extract_result = tokio::task::spawn_blocking(move || extract_first_rar(&extract_folder))
+                let extract_title = pipeline_title.clone();
+
+                let extract_result = tokio::task::spawn_blocking(move || crate::game_files::extract_and_verify(&extract_title, &extract_folder))
 
                     .await
 
@@ -239,8 +239,6 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
                         flog(&format!("[DL] {}: extracted {} files", pipeline_title, count));
 
                         add_game_to_steam(&pipeline_title, &pipeline_folder);
-
-                        delete_installers(&pipeline_folder);
 
                         if let Some(build) = &pipeline_build {
 

@@ -7,8 +7,6 @@ use librqbit::TorrentStatsState;
 use crate::DownloadEngine;
 use crate::DownloadProgress;
 use crate::add_game_to_steam;
-use crate::delete_installers;
-use crate::extract_first_rar;
 use crate::log_fail;
 use tauri::Emitter;
 use tauri::Manager;
@@ -196,7 +194,9 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
                     let blocking_folder = extract_folder.clone();
 
-                    let result = tokio::task::spawn_blocking(move || extract_first_rar(&blocking_folder))
+                    let blocking_title = extract_title.clone();
+
+                    let result = tokio::task::spawn_blocking(move || crate::game_files::extract_and_verify(&blocking_title, &blocking_folder))
 
                         .await
 
@@ -209,8 +209,6 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
                             flog(&format!("[DL] {}: extracted {} files", extract_title, count));
 
                             add_game_to_steam(&extract_title, &extract_folder);
-
-                            delete_installers(&extract_folder);
 
                             if let Some(build) = &extract_build {
 

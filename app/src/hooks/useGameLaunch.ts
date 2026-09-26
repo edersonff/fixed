@@ -6,6 +6,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { listen } from "@tauri-apps/api/event";
 
+import { FILES_REMOVED, openRepair } from "../lib/repairStore";
+
 import type { LaunchProgressPayload } from "../types";
 
 const PHASE_LABELS: Record<string, string> = {
@@ -99,6 +101,18 @@ export function useGameLaunch(gameTitle: string) {
       })
 
       .catch((reason: unknown) => {
+
+        if (String(reason) === FILES_REMOVED) {
+
+          setPhase(IDLE_PHASE);
+
+          setLaunchMsg("");
+
+          openRepair(gameTitle);
+
+          return;
+
+        }
 
         setPhase("failed");
 

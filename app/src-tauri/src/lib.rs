@@ -5,6 +5,8 @@ use librqbit::SessionOptions;
 use tauri::Manager;
 
 mod commands;
+mod defender;
+mod game_files;
 mod game_process;
 mod helpers;
 mod lane;
@@ -172,6 +174,28 @@ pub fn run() {
 
         .manage(DownloadEngine { session: std::sync::Mutex::new(None), cancels: std::sync::Mutex::new(std::collections::HashMap::new()), torrents: std::sync::Mutex::new(std::collections::HashMap::new()) })
 
+        .on_window_event(|window, event| {
+
+            let tauri::WindowEvent::CloseRequested { api, .. } = event else {
+
+                return;
+
+            };
+
+            let busy = window.app_handle().try_state::<DownloadEngine>().map(|engine| engine.is_busy()).unwrap_or(false);
+
+            if busy {
+
+                api.prevent_close();
+
+                let _ = window.hide();
+
+                flog("[APP] close while downloading: window hidden to tray, downloads keep running");
+
+            }
+
+        })
+
         .setup(|app| {
 
             let open = tauri::menu::MenuItem::with_id(app, "open", "Open FIXED", true, None::<&str>)?;
@@ -276,7 +300,7 @@ pub fn run() {
 
         })
 
-        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game])
+        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game, game_files::game_files_status, game_files::restore_game_files])
 
         .run(tauri::generate_context!())
 

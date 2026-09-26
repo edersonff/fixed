@@ -10,7 +10,7 @@ import { DownloadsView } from "./Downloads";
 
 import { LibraryView } from "./Library";
 
-import { DefenderModal } from "./components/DefenderModal";
+import { RepairFilesModal } from "./components/RepairFilesModal";
 
 import { Sidebar } from "./components/Sidebar";
 
@@ -46,7 +46,7 @@ export default function App() {
 
     useAppNavigation(catalog);
 
-  const { appVersion, showDefender, setShowDefender } = useAppLifecycle(setSelected);
+  const { appVersion } = useAppLifecycle(setSelected);
 
   const [torrentAsk, setTorrentAsk] = useState<{ game: GameEntry; detail: GameDetail } | null>(null);
 
@@ -242,19 +242,7 @@ export default function App() {
 
         </section>
 
-      <DefenderModal
-
-        open={showDefender}
-
-        onClose={() => {
-
-          window.localStorage.setItem("fixed-defender-seen", "1");
-
-          setShowDefender(false);
-
-        }}
-
-      />
+      <RepairFilesModal />
 
       <TorrentOnlyModal
 

@@ -200,9 +200,9 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
     match fix_core::add_steam_shortcut(&vdf, title, &exe, &start_dir, fix_core::launch_options()) {
 
-        Ok(index) => {
+        Ok(appid) => {
 
-            flog(&format!("[DL] {}: added to Steam (index {})", title, index));
+            flog(&format!("[DL] {}: added to Steam (appid {})", title, appid));
 
             true
 

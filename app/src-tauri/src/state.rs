@@ -28,6 +28,20 @@ pub struct DownloadEngine {
 
 }
 
+impl DownloadEngine {
+
+    pub fn is_busy(&self) -> bool {
+
+        let http = self.cancels.lock().map(|active| !active.is_empty()).unwrap_or(false);
+
+        let torrent = self.torrents.lock().map(|active| !active.is_empty()).unwrap_or(false);
+
+        http || torrent
+
+    }
+
+}
+
 #[derive(serde::Serialize, Clone)]
 
 #[serde(rename_all = "camelCase")]

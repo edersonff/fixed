@@ -8,11 +8,9 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
     let Some(exe) = fix_core::find_game_exe(&folder) else {
 
-        let message = format!("no game exe found in {}", folder);
+        flog(&format!("[PLUGIN] {}: no game exe found in {}", title, folder));
 
-        flog(&format!("[PLUGIN] {}: {}", title, message));
-
-        return Err(message);
+        return Err(String::from(crate::user_error::GAME_EXE_MISSING));
 
     };
 
@@ -60,7 +58,7 @@ pub fn install_plugin(title: String, archive_path: String) -> Result<u32, String
 
             flog(&format!("[PLUGIN] {}: FAILED: {}", title, error));
 
-            Err(error)
+            Err(String::from(crate::user_error::PLUGIN_UNREADABLE))
 
         }
 

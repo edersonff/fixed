@@ -100,6 +100,7 @@ mod shortcut_lookup;
 mod site;
 mod steam_remove;
 mod store_items;
+mod unrar;
 mod vdf;
 
 #[cfg(test)]
@@ -117,6 +118,7 @@ pub use shortcut_id::*;
 pub use shortcut_lookup::*;
 pub use site::*;
 pub use steam_remove::*;
+pub use unrar::*;
 pub(crate) use vdf::*;
 
 #[derive(Serialize, serde::Deserialize)]

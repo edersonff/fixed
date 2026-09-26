@@ -24,7 +24,9 @@ import { usePluginInstall } from "../hooks/usePluginInstall";
 
 import { diskSize, displayTitle } from "../lib/format";
 
-import { fadeRiseVariants } from '../lib/motion';
+import { fadeRiseVariants } from "../lib/motion";
+
+import { openRepair } from "../lib/repairStore";
 
 import type { InstalledGame } from "../types";
 
@@ -197,9 +199,19 @@ export function LibraryCard({
 
             phase={phase}
 
+            needsRepair={game.missingFiles > 0}
+
             onLaunch={(event) => {
 
               event.stopPropagation();
+
+              if (game.missingFiles > 0) {
+
+                openRepair(game.title);
+
+                return;
+
+              }
 
               launch();
 

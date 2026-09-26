@@ -116,6 +116,18 @@ export type InstalledGame = {
 
   build?: string | null;
 
+  missingFiles: number;
+
 };
 
 export type View = "home" | "library" | "downloads";
+
+export type GameFilesStatus = {
+
+  missing: string[];
+
+  canRestore: boolean;
+
+  protectionOn: boolean | null;
+
+};

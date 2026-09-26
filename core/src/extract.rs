@@ -2,7 +2,7 @@
 const PLUGIN_META_FILES: [&str; 4] = ["manifest.json", "icon.png", "readme.md", "changelog.md"];
 
 
-pub const RAR_PASSWORD: &str = "online-fix.me";
+use crate::extract_archive;
 
 pub fn install_plugin(archive_path: &str, game_dir: &str) -> Result<u32, String> {
 
@@ -206,130 +206,6 @@ fn place_extracted(source: &str, game_dir: &str) -> Result<u32, String> {
     }
 
     Ok(count)
-
-}
-
-pub fn extract_archive(archive_path: &str, dest_dir: &str) -> Result<u32, String> {
-
-    let trimmed_dest = dest_dir.trim_end_matches('/');
-
-    std::fs::create_dir_all(trimmed_dest).map_err(|error| format!("create {}: {}", trimmed_dest, error))?;
-
-    let destination = format!("{}/", trimmed_dest);
-
-    let password_flag = format!("-p{}", RAR_PASSWORD);
-
-    let mut unrar_candidates: Vec<String> = Vec::new();
-
-    if let Ok(current_exe) = std::env::current_exe() {
-
-        if let Some(dir) = current_exe.parent() {
-
-            let sidecar = dir.join(if cfg!(windows) { "unrar.exe" } else { "unrar" });
-
-            unrar_candidates.push(sidecar.to_string_lossy().to_string());
-
-        }
-
-    }
-
-    if cfg!(windows) {
-
-        unrar_candidates.push(String::from("unrar.exe"));
-
-        unrar_candidates.push(String::from("UnRAR"));
-
-    } else {
-
-        unrar_candidates.push(String::from("unrar"));
-
-    }
-
-    let mut output: Option<std::process::Output> = None;
-
-    let mut spawn_error: Option<String> = None;
-
-    for binary in &unrar_candidates {
-
-        match std::process::Command::new(binary)
-
-            .arg("x")
-
-            .arg(&password_flag)
-
-            .arg("-o+")
-
-            .arg("-idp")
-
-            .arg(archive_path)
-
-            .arg(&destination)
-
-            .output()
-
-        {
-
-            Ok(result) => {
-
-                output = Some(result);
-
-                break;
-
-            }
-
-            Err(error) => {
-
-                spawn_error = Some(format!("{}: {}", binary, error));
-
-            }
-
-        }
-
-    }
-
-    let output = output.ok_or_else(|| {
-
-        let tried = unrar_candidates.join(", ");
-
-        format!("spawn unrar (tried [{}]): {}", tried, spawn_error.unwrap_or_default())
-
-    })?;
-
-    if !output.status.success() {
-
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-
-        let lines: Vec<String> = String::from_utf8_lossy(&output.stdout)
-
-            .lines()
-
-            .map(String::from)
-
-            .collect();
-
-        let tail_start = lines.len().saturating_sub(5);
-
-        let stdout_tail: String = lines[tail_start..].join(" | ");
-
-        return Err(format!(
-
-            "unrar exit {:?}: stderr=[{}] stdout_tail=[{}]",
-
-            output.status.code(),
-
-            stderr,
-
-            stdout_tail
-
-        ));
-
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    let count = stdout.lines().filter(|line| line.starts_with("Extracting")).count();
-
-    Ok(count as u32)
 
 }
 

@@ -1,10 +1,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 
-import { FolderOpen, Play, Puzzle } from "lucide-react";
+import { FolderOpen, Play, Puzzle, ShieldAlert } from "lucide-react";
 
 import { actionHover, actionPressDown, stateVariants } from "../lib/motion";
 
-function playLabel(launching: boolean, phase: string): string {
+function playLabel(launching: boolean, phase: string, needsRepair: boolean): string {
+
+  if (needsRepair) {
+
+    return "Fix files";
+
+  }
 
   if (phase === "running") {
 
@@ -22,6 +28,8 @@ export function LibraryCardActions({
 
   phase,
 
+  needsRepair,
+
   onLaunch,
 
   onAddPlugin,
@@ -34,6 +42,8 @@ export function LibraryCardActions({
 
   phase: string;
 
+  needsRepair: boolean;
+
   onLaunch: (event: React.MouseEvent) => void;
 
   onAddPlugin: (event: React.MouseEvent) => void;
@@ -42,7 +52,7 @@ export function LibraryCardActions({
 
 }) {
 
-  const label = playLabel(launching, phase);
+  const label = playLabel(launching, phase, needsRepair);
 
   return (
 
@@ -52,7 +62,7 @@ export function LibraryCardActions({
 
         type="button"
 
-        className="play action-button"
+        className={needsRepair ? "play action-button needs-repair" : "play action-button"}
 
         whileHover={actionHover}
 
@@ -66,7 +76,7 @@ export function LibraryCardActions({
 
         <span className="action-icon">
 
-          <Play size={16} strokeWidth={2.4} />
+          {needsRepair ? <ShieldAlert size={16} strokeWidth={2.2} /> : <Play size={16} strokeWidth={2.4} />}
 
         </span>
 

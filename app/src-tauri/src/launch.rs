@@ -413,6 +413,16 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
     };
 
+    let removed = crate::game_files::missing_files(std::path::Path::new(&folder));
+
+    if !removed.is_empty() {
+
+        flog(&format!("[LAUNCH] {}: {} game files missing, asking for restore", title, removed.len()));
+
+        return Err(String::from(crate::user_error::FILES_REMOVED));
+
+    }
+
     let basename = crate::launch_monitor::exe_basename(&exe);
 
     if let Some(pid) = crate::game_process::find_game_pid(&basename) {
@@ -469,9 +479,21 @@ pub async fn launch_game(app: tauri::AppHandle, title: String) -> Result<String,
 
     });
 
-    if let Err(error) = &result {
+    match &result {
 
-        crate::launch_progress::emit_progress(&app, &title, "failed", error);
+        Ok(_) => {
+
+            if let Some(folder) = crate::game_folder(&title) {
+
+                std::thread::spawn(move || crate::game_files::release_archive_if_intact(&title, &folder));
+
+            }
+
+        }
+
+        Err(error) if error == crate::user_error::FILES_REMOVED => {}
+
+        Err(error) => crate::launch_progress::emit_progress(&app, &title, "failed", error),
 
     }
 

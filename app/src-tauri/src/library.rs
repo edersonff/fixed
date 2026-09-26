@@ -19,6 +19,8 @@ pub struct InstalledGame {
 
     pub build: Option<String>,
 
+    pub missing_files: usize,
+
 }
 
 fn folder_bytes(dir: &std::path::Path) -> u64 {
@@ -75,6 +77,8 @@ fn read_installed(dir: &std::path::Path) -> Option<InstalledGame> {
         has_plugins,
 
         build,
+
+        missing_files: crate::game_files::missing_files(dir).len(),
 
     })
 
@@ -221,6 +225,15 @@ fn remove_steam_registration(title: &str, folder: &std::path::Path) -> Result<Ve
 pub fn uninstall_game(title: String, remove_from_steam: bool) -> Result<String, String> {
 
     let target = resolve_uninstall_target(&title)?;
+
+    let running = fix_core::find_game_exe(&target.to_string_lossy())
+        .and_then(|exe| crate::game_process::find_game_pid(&crate::launch_monitor::exe_basename(&exe)));
+
+    if running.is_some() {
+
+        return Err(String::from("Close the game before uninstalling it."));
+
+    }
 
     let mut removed = Vec::new();
 
