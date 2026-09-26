@@ -91,89 +91,72 @@ pub fn games_root() -> Option<std::path::PathBuf> {
 
 }
 
-pub fn game_folder(title: &str) -> Option<String> {
+const WINDOWS_RESERVED_NAMES: [&str; 22] = [
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+];
 
-    games_root().map(|root| root.join(title).to_string_lossy().to_string())
+// One folder name on every OS, valid on the strictest (Windows): catalog titles carry ':' and '?'
+// ("Subtitle: Edition"), which create_dir_all rejects there.
+pub fn safe_title(title: &str) -> String {
+
+    let replaced: String = title
+        .chars()
+        .map(|character| if "<>:\"/\\|?*".contains(character) || character.is_control() { '_' } else { character })
+        .collect();
+
+    let trimmed = replaced.trim_end_matches(['.', ' ']).trim_start();
+
+    let stem = trimmed.split('.').next().unwrap_or("").to_uppercase();
+
+    if trimmed.is_empty() {
+
+        return String::from("_");
+
+    }
+
+    if WINDOWS_RESERVED_NAMES.contains(&stem.as_str()) {
+
+        return format!("{}_", trimmed);
+
+    }
+
+    trimmed.to_string()
 
 }
 
-pub fn find_shortcuts_vdf() -> Option<String> {
+// Linux installs made before safe_title keep their raw folder (':' was legal there).
+pub fn game_folder(title: &str) -> Option<String> {
 
-    let mut roots: Vec<std::path::PathBuf> = Vec::new();
+    let root = games_root()?;
 
-    if let Some(home) = home_dir() {
+    let legacy = root.join(title);
 
-        let home_path = std::path::PathBuf::from(&home);
+    let folder = if legacy.is_dir() { legacy } else { root.join(safe_title(title)) };
 
-        roots.push(home_path.join(".steam/steam/userdata"));
+    Some(folder.to_string_lossy().to_string())
 
-        roots.push(home_path.join(".local/share/Steam/userdata"));
+}
 
-    }
+pub(crate) fn start_dir_of(exe: &str) -> String {
 
-    if let Ok(x86) = std::env::var("ProgramFiles(x86)") {
-
-        roots.push(std::path::PathBuf::from(&x86).join("Steam/userdata"));
-
-    }
-
-    if let Ok(program_files) = std::env::var("ProgramFiles") {
-
-        roots.push(std::path::PathBuf::from(&program_files).join("Steam/userdata"));
-
-    }
-
-    if let Ok(steam) = std::env::var("STEAM_PATH") {
-
-        roots.push(std::path::PathBuf::from(steam).join("userdata"));
-
-    }
-
-    for userdata in roots {
-
-        let Ok(entries) = std::fs::read_dir(&userdata) else {
-
-            continue;
-
-        };
-
-        for entry in entries.flatten() {
-
-            let candidate = entry.path().join("config").join("shortcuts.vdf");
-
-            if candidate.exists() {
-
-                return candidate.to_str().map(String::from);
-
-            }
-
-        }
-
-    }
-
-    None
+    std::path::Path::new(exe)
+        .parent()
+        .map(|parent| format!("{}{}", parent.to_string_lossy(), std::path::MAIN_SEPARATOR))
+        .unwrap_or_default()
 
 }
 
 pub fn write_stable_shortcut(title: &str, exe: &str, appid: u32) -> Result<(), String> {
 
-    let Some(vdf) = find_shortcuts_vdf() else {
-
-        return Err(String::from("steam shortcuts.vdf not found"));
-
-    };
+    let vdf = crate::steam_user::shortcuts_vdf()?;
 
     let _ = fix_core::remove_steam_shortcut(&vdf, title);
 
-    let start_dir = std::path::Path::new(exe)
+    let start_dir = start_dir_of(exe);
 
-        .parent()
-
-        .map(|parent| format!("{}/", parent.to_string_lossy()))
-
-        .unwrap_or_default();
-
-    fix_core::add_shortcut_with_appid(&vdf, title, exe, &start_dir, fix_core::ONLINE_FIX_LAUNCH_OPTIONS, appid)?;
+    fix_core::add_shortcut_with_appid(&vdf, title, exe, &start_dir, fix_core::launch_options(), appid)?;
 
     crate::flog(&format!("[STEAM] {}: stable shortcut written, appid {}", title, appid));
 
@@ -182,11 +165,18 @@ pub fn write_stable_shortcut(title: &str, exe: &str, appid: u32) -> Result<(), S
 }
 
 pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
-    let Some(vdf) = find_shortcuts_vdf() else {
 
-        flog(&format!("[DL] {}: steam shortcuts.vdf not found", title));
+    let vdf = match crate::steam_user::shortcuts_vdf() {
 
-        return false;
+        Ok(vdf) => vdf,
+
+        Err(error) => {
+
+            flog(&format!("[DL] {}: not added to Steam: {}", title, error));
+
+            return false;
+
+        }
 
     };
 
@@ -206,15 +196,9 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
     };
 
-    let start_dir = std::path::Path::new(&exe)
+    let start_dir = start_dir_of(&exe);
 
-        .parent()
-
-        .map(|parent| format!("{}{}", parent.to_string_lossy(), std::path::MAIN_SEPARATOR))
-
-        .unwrap_or_default();
-
-    match fix_core::add_steam_shortcut(&vdf, title, &exe, &start_dir, fix_core::ONLINE_FIX_LAUNCH_OPTIONS) {
+    match fix_core::add_steam_shortcut(&vdf, title, &exe, &start_dir, fix_core::launch_options()) {
 
         Ok(index) => {
 
@@ -276,3 +260,7 @@ pub fn log_fail(title: &str, step: &str, error: String) -> String {
 
 }
 
+
+#[cfg(test)]
+#[path = "helpers_tests.rs"]
+mod helpers_tests;

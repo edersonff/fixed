@@ -243,7 +243,7 @@ fn fix_site_connection_open() -> bool {
 
     }
 
-    let Ok(output) = std::process::Command::new("ss")
+    let Ok(output) = crate::quiet_command::quiet_command("ss")
 
         .args(["-tunp", "state", "established"])
 

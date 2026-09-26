@@ -1,35 +1,46 @@
 use std::path::PathBuf;
 
-#[cfg(windows)]
-use std::process::Command;
+const FLATPAK_MARKER: &str = "com.valvesoftware.Steam";
 
-#[cfg(not(windows))]
-pub fn steam_root() -> Option<PathBuf> {
+// steamlocate covers native, Flatpak, Snap and debian-installation on Linux and the HKLM
+// InstallPath on Windows; HKCU SteamPath is Steam's own per-launch record and catches installs
+// the machine-wide key misses.
+fn candidates() -> Vec<PathBuf> {
 
-    let home = PathBuf::from(crate::home_dir()?);
+    #[cfg_attr(not(windows), allow(unused_mut))]
+    let mut found: Vec<PathBuf> = steamlocate::locate_all()
+        .map(|dirs| dirs.into_iter().map(|dir| dir.path().to_path_buf()).collect())
+        .unwrap_or_default();
 
-    for candidate in [home.join(".local/share/Steam"), home.join(".steam/steam")] {
+    #[cfg(windows)]
+    if let Some(path) = steam_root_from_registry() {
 
-        if candidate.join("config/config.vdf").is_file() {
-
-            return Some(candidate);
-
-        }
+        found.push(path);
 
     }
 
-    None
+    found
 
 }
 
-// Steam writes its own install path to the registry on every launch (SteamPath, REG_SZ), so that
-// is checked before the Program Files defaults — a custom install drive would otherwise never be
-// found. Confirmed against public SteamPath registry documentation; not exercised against a real
-// Windows registry from this machine.
+pub fn steam_root() -> Option<PathBuf> {
+
+    candidates()
+        .into_iter()
+        .find(|candidate| candidate.join("config/config.vdf").is_file())
+
+}
+
+pub fn is_flatpak_steam(root: &std::path::Path) -> bool {
+
+    root.to_string_lossy().contains(FLATPAK_MARKER)
+
+}
+
 #[cfg(windows)]
 fn steam_root_from_registry() -> Option<PathBuf> {
 
-    let output = Command::new("reg")
+    let output = crate::quiet_command::quiet_command("reg")
         .args(["query", r"HKCU\Software\Valve\Steam", "/v", "SteamPath"])
         .output()
         .ok()?;
@@ -76,35 +87,6 @@ fn parse_reg_sz_value(output: &str, value_name: &str) -> Option<String> {
     }
 
     None
-
-}
-
-#[cfg(windows)]
-pub fn steam_root() -> Option<PathBuf> {
-
-    let mut candidates: Vec<PathBuf> = Vec::new();
-
-    if let Some(path) = steam_root_from_registry() {
-
-        candidates.push(path);
-
-    }
-
-    if let Ok(x86) = std::env::var("ProgramFiles(x86)") {
-
-        candidates.push(PathBuf::from(x86).join("Steam"));
-
-    }
-
-    if let Ok(program_files) = std::env::var("ProgramFiles") {
-
-        candidates.push(PathBuf::from(program_files).join("Steam"));
-
-    }
-
-    candidates
-        .into_iter()
-        .find(|candidate| candidate.join("config/config.vdf").is_file())
 
 }
 

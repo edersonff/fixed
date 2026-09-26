@@ -10,6 +10,14 @@ pub const ONLINE_FIX_DLL_OVERRIDES: &str = "winhttp=n,b;WINMM=n,b;SteamOverlay64
 
 pub const ONLINE_FIX_LAUNCH_OPTIONS: &str = "WINEDLLOVERRIDES=\"winhttp=n,b;OnlineFix64=n;SteamOverlay64=n;winmm=n,b;dnet=n;steam_api64=n\" %command%";
 
+// WINEDLLOVERRIDES only means something under Wine/Proton; native Windows loads the game-folder
+// DLLs by itself.
+pub fn launch_options() -> &'static str {
+
+    if cfg!(windows) { "" } else { ONLINE_FIX_LAUNCH_OPTIONS }
+
+}
+
 pub fn add_steam_shortcut(vdf_path: &str, app_name: &str, exe_path: &str, start_dir: &str, launch_options: &str) -> Result<u32, String> {
 
     let data = std::fs::read(vdf_path).map_err(|error| format!("read {}: {}", vdf_path, error))?;

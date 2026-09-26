@@ -32,7 +32,7 @@ pub use crate::steam_root::steam_root;
 #[cfg(not(windows))]
 fn process_alive(name: &str) -> bool {
 
-    Command::new("pgrep")
+    crate::quiet_command::quiet_command("pgrep")
         .args(["-x", name])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -50,7 +50,7 @@ fn process_alive(image_name: &str) -> bool {
 
     let filter = format!("IMAGENAME eq {}", image_name);
 
-    Command::new("tasklist")
+    crate::quiet_command::quiet_command("tasklist")
         .args(["/FI", &filter, "/NH"])
         .output()
         .map(|output| tasklist_reports_running(&String::from_utf8_lossy(&output.stdout), image_name))
@@ -239,7 +239,7 @@ fn steam_executable() -> Result<PathBuf, String> {
 
     steam_root()
         .map(|root| root.join("steam.exe"))
-        .ok_or_else(|| String::from("steam root not found"))
+        .ok_or_else(|| String::from(crate::user_error::STEAM_NOT_INSTALLED))
 
 }
 
@@ -248,7 +248,7 @@ pub fn start_silent() -> Result<(), String> {
 
     let exe = steam_executable()?;
 
-    let mut command = Command::new(exe);
+    let mut command = crate::quiet_command::quiet_command(exe);
 
     command.arg("-silent");
 
@@ -257,9 +257,28 @@ pub fn start_silent() -> Result<(), String> {
 }
 
 #[cfg(not(windows))]
+fn steam_command() -> Command {
+
+    let flatpak = steam_root().map(|root| crate::steam_root::is_flatpak_steam(&root)).unwrap_or(false);
+
+    if !flatpak {
+
+        return crate::quiet_command::quiet_command("steam");
+
+    }
+
+    let mut command = crate::quiet_command::quiet_command("flatpak");
+
+    command.args(["run", "com.valvesoftware.Steam"]);
+
+    command
+
+}
+
+#[cfg(not(windows))]
 pub fn start_silent() -> Result<(), String> {
 
-    let mut command = Command::new("steam");
+    let mut command = steam_command();
 
     command.arg("-silent");
 
@@ -272,7 +291,7 @@ pub fn shutdown() -> Result<(), String> {
 
     let exe = steam_executable()?;
 
-    let mut command = Command::new(exe);
+    let mut command = crate::quiet_command::quiet_command(exe);
 
     command.arg("-shutdown");
 
@@ -283,7 +302,7 @@ pub fn shutdown() -> Result<(), String> {
 #[cfg(not(windows))]
 pub fn shutdown() -> Result<(), String> {
 
-    let mut command = Command::new("steam");
+    let mut command = steam_command();
 
     command.arg("-shutdown");
 
@@ -324,7 +343,7 @@ pub fn open_url(url: &str) -> Result<u32, String> {
     #[cfg(windows)]
     let mut command = {
 
-        let mut command = Command::new("cmd");
+        let mut command = crate::quiet_command::quiet_command("cmd");
 
         command.args(["/C", "start", "", url]);
 
@@ -335,7 +354,7 @@ pub fn open_url(url: &str) -> Result<u32, String> {
     #[cfg(not(windows))]
     let mut command = {
 
-        let mut command = Command::new("steam");
+        let mut command = steam_command();
 
         command.arg(url);
 

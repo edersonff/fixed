@@ -146,7 +146,7 @@ pub async fn game_assets(title: String) -> Result<Option<fix_core::GameAssets>, 
 
 pub async fn cancel_download(app: tauri::AppHandle, engine: tauri::State<'_, DownloadEngine>, title: String) -> Result<bool, String> {
 
-    let safe_title = title.replace('/', "_");
+    let safe_title = crate::safe_title(&title);
 
     let http_found = {
 

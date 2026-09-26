@@ -1,5 +1,3 @@
-use std::process::Command;
-
 #[cfg(not(windows))]
 use std::process::Stdio;
 
@@ -13,7 +11,7 @@ pub fn game_launch_started(appid: u32) -> bool {
 
     let pattern = format!("reaper SteamLaunch AppId={}", appid);
 
-    Command::new("pgrep")
+    crate::quiet_command::quiet_command("pgrep")
         .args(["-f", &pattern])
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -79,7 +77,7 @@ fn parse_ps_game_pid(output: &str, exe_basename: &str) -> Option<u32> {
 #[cfg(not(windows))]
 pub fn find_game_pid(exe_basename: &str) -> Option<u32> {
 
-    let output = Command::new("ps").args(["-eo", "pid=,args="]).output().ok()?;
+    let output = crate::quiet_command::quiet_command("ps").args(["-eo", "pid=,args="]).output().ok()?;
 
     parse_ps_game_pid(&String::from_utf8_lossy(&output.stdout), exe_basename)
 
@@ -113,7 +111,7 @@ pub fn find_game_pid(exe_basename: &str) -> Option<u32> {
 
     let filter = format!("IMAGENAME eq {}", exe_basename);
 
-    let output = Command::new("tasklist").args(["/FI", &filter, "/FO", "CSV", "/NH"]).output().ok()?;
+    let output = crate::quiet_command::quiet_command("tasklist").args(["/FI", &filter, "/FO", "CSV", "/NH"]).output().ok()?;
 
     parse_tasklist_csv_pid(&String::from_utf8_lossy(&output.stdout), exe_basename)
 
@@ -131,7 +129,7 @@ pub fn pid_alive(pid: u32) -> bool {
 
     let filter = format!("PID eq {}", pid);
 
-    Command::new("tasklist")
+    crate::quiet_command::quiet_command("tasklist")
         .args(["/FI", &filter, "/NH"])
         .output()
         .map(|output| crate::steam_client::tasklist_reports_running(&String::from_utf8_lossy(&output.stdout), &pid.to_string()))

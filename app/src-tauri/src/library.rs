@@ -242,7 +242,7 @@ pub fn open_game_folder(folder: String) -> Result<(), String> {
     #[cfg(all(unix, not(target_os = "macos")))]
     let opener = "xdg-open";
 
-    std::process::Command::new(opener)
+    crate::quiet_command::quiet_command(opener)
         .arg(&folder)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())

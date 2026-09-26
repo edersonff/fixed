@@ -1,5 +1,4 @@
 use crate::flog;
-use crate::find_shortcuts_vdf;
 
 // Steam is the only thing that can hand the game a real session: `reaper SteamLaunch AppId=...`
 // registers the process with the running client, which is what makes online-fix's replaced
@@ -11,9 +10,9 @@ use crate::find_shortcuts_vdf;
 // exit, so registering a game costs one client restart. `-silent` makes that restart invisible.
 pub(crate) fn steam_paths() -> Result<(String, std::path::PathBuf), String> {
 
-    let vdf = find_shortcuts_vdf().ok_or_else(|| String::from("steam shortcuts.vdf not found"))?;
+    let root = crate::steam_client::steam_root().ok_or_else(|| String::from(crate::user_error::STEAM_NOT_INSTALLED))?;
 
-    let root = crate::steam_client::steam_root().ok_or_else(|| String::from("steam root not found"))?;
+    let vdf = crate::steam_user::shortcuts_vdf()?;
 
     Ok((vdf, root))
 
@@ -110,7 +109,7 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
             let emitted = crate::steam_ipc::cef_add_shortcut(title, exe).await?;
 
-            crate::steam_ipc::cef_set_launch_options(emitted, fix_core::ONLINE_FIX_LAUNCH_OPTIONS).await?;
+            crate::steam_ipc::cef_set_launch_options(emitted, fix_core::launch_options()).await?;
 
             let _ = crate::steam_ipc::cef_remove_shortcut(emitted).await;
 
@@ -119,12 +118,6 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
             crate::write_stable_shortcut(title, exe, emitted)?;
 
             fix_core::ensure_compat_tool(&root.to_string_lossy(), emitted, fix_core::DEFAULT_COMPAT_TOOL)?;
-
-            for orphan in [3496708822u32, 3805198223, 3665257087, 3148280713] {
-
-                let _ = fix_core::remove_compat_tool(&root.to_string_lossy(), orphan);
-
-            }
 
             crate::launch_progress::emit_progress(app, title, "starting-steam", "");
 
@@ -282,7 +275,7 @@ async fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Resul
 
     if !crate::launch_progress::wait_with_progress(app, title) {
 
-        let message = String::from("steam did not come up");
+        let message = String::from(crate::user_error::STEAM_DID_NOT_START);
 
         flog(&format!("[LAUNCH] {}: {}", title, message));
 
@@ -320,7 +313,7 @@ async fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Resul
 
     crate::launch_progress::emit_progress(app, title, "launching", "");
 
-    let exe = fix_core::find_game_exe(folder).ok_or_else(|| String::from("game exe not found"))?;
+    let exe = fix_core::find_game_exe(folder).ok_or_else(|| String::from(crate::user_error::GAME_EXE_MISSING))?;
 
     let (vdf, _) = steam_paths()?;
 
@@ -414,11 +407,9 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
     let Some(exe) = fix_core::find_game_exe(&folder) else {
 
-        let message = format!("no game exe found in {}", folder);
+        flog(&format!("[LAUNCH] {}: no game exe found in {}", title, folder));
 
-        flog(&format!("[LAUNCH] {}: {}", title, message));
-
-        return Err(message);
+        return Err(String::from(crate::user_error::GAME_EXE_MISSING));
 
     };
 
@@ -438,11 +429,27 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
         Ok(result) => Ok(result),
 
+        Err(cef_error) if crate::user_error::needs_person(&cef_error) => {
+
+            flog(&format!("[LAUNCH] {}: {}", title, cef_error));
+
+            Err(cef_error)
+
+        }
+
         Err(cef_error) => {
 
             flog(&format!("[LAUNCH] {}: CEF flow failed ({}), falling back to legacy vdf flow", title, cef_error));
 
-            legacy_flow(app, title, &folder).await
+            let legacy = legacy_flow(app, title, &folder).await;
+
+            if let Err(legacy_error) = &legacy {
+
+                flog(&format!("[LAUNCH] {}: legacy flow failed ({})", title, legacy_error));
+
+            }
+
+            legacy
 
         }
 
@@ -454,7 +461,13 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
 pub async fn launch_game(app: tauri::AppHandle, title: String) -> Result<String, String> {
 
-    let result = run_launch(&app, &title).await;
+    let result = run_launch(&app, &title).await.map_err(|error| {
+
+        flog(&format!("[LAUNCH] {}: failed: {}", title, error));
+
+        crate::user_error::for_person(error)
+
+    });
 
     if let Err(error) = &result {
 
