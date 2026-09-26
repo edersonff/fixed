@@ -4,7 +4,7 @@ let repairTitle: string | null = null;
 
 const listeners = new Set<Listener>();
 
-export const FILES_REMOVED = "files-removed-by-antivirus";
+export const FILES_REMOVED = "game-files-missing";
 
 export function getRepairTitle(): string | null {
 

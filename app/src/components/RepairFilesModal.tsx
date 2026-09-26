@@ -18,27 +18,19 @@ import type { GameFilesStatus } from "../types";
 
 const DEFENDER_SETTINGS_URL = "windowsdefender://threatsettings";
 
+function securityAppName(): string {
+
+  return navigator.userAgent.includes("Windows") ? "Windows Defender" : "Your security app";
+
+}
+
 function headline(status: GameFilesStatus | null, game: string): string {
 
   const count = status?.missing.length ?? 0;
 
   const files = count === 1 ? "1 file" : `${count} files`;
 
-  const who = status?.protectionOn === null ? "Your antivirus" : "Windows Defender";
-
-  return `${who} deleted ${files} from ${game}`;
-
-}
-
-function ProtectionPill({ on }: { on: boolean | null | undefined }) {
-
-  if (on === null || on === undefined) {
-
-    return null;
-
-  }
-
-  return <span className={on ? "protection-pill on" : "protection-pill off"}>{on ? "Protection ON" : "Protection OFF"}</span>;
+  return `${securityAppName()} deleted ${files} from ${game}`;
 
 }
 
@@ -60,8 +52,6 @@ function RepairSteps({
 
 }) {
 
-  const protectionOn = status.protectionOn === true;
-
   if (!status.canRestore) {
 
     return <p className="modal-hint">The game download was already deleted, so these files cannot be restored. Uninstall the game and download it again.</p>;
@@ -72,13 +62,11 @@ function RepairSteps({
 
     <ol className="repair-steps">
 
-      <li className={protectionOn ? "current" : "done"}>
+      <li>
 
         <div>
 
           <strong>Turn off Real-time protection</strong>
-
-          <ProtectionPill on={status.protectionOn} />
 
         </div>
 
@@ -90,13 +78,11 @@ function RepairSteps({
 
       </li>
 
-      <li className={protectionOn ? "" : "current"}>
+      <li className="current">
 
         <div>
 
           <strong>Get the files back</strong>
-
-          {protectionOn && <span className="repair-warn">Turn protection off first, or Defender deletes them again.</span>}
 
         </div>
 

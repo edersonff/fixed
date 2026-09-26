@@ -6,7 +6,7 @@ pub const STEAM_DID_NOT_START: &str = "Steam did not finish starting. Open Steam
 
 pub const STEAM_LAUNCH_FAILED: &str = "Steam could not start the game. Close Steam completely, open it again, then press Play. Details are in the app log.";
 
-pub const FILES_REMOVED: &str = "files-removed-by-antivirus";
+pub const FILES_REMOVED: &str = "game-files-missing";
 
 pub const ARCHIVE_GONE: &str = "The game download was already deleted, so these files cannot be restored. Uninstall the game and download it again.";
 

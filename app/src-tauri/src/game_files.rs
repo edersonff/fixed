@@ -6,8 +6,8 @@ use crate::flog;
 
 const MANIFEST: &str = ".fixed-files";
 
-// Measured 2026-09-26 in the Windows lab: Defender quarantined OnlineFix64.dll and winmm.dll within
-// one second of unrar writing them, so a short settle catches the removal before the archive goes.
+// Measured 2026-09-26 in the Windows lab: the security app removed OnlineFix64.dll and winmm.dll
+// within one second of unrar writing them, so a short settle catches the removal before the archive goes.
 const SETTLE_CHECKS: u32 = 4;
 
 const SETTLE_STEP: std::time::Duration = std::time::Duration::from_secs(2);
@@ -17,7 +17,6 @@ const SETTLE_STEP: std::time::Duration = std::time::Duration::from_secs(2);
 pub struct GameFilesStatus {
     pub missing: Vec<String>,
     pub can_restore: bool,
-    pub protection_on: Option<bool>,
 }
 
 pub(crate) fn archive_in(folder: &Path) -> Option<PathBuf> {
@@ -136,7 +135,7 @@ fn after_extract(title: &str, folder: &str) {
 
     }
 
-    flog(&format!("[FILES] {}: {} files removed after extraction (antivirus): {}", title, missing.len(), missing.join(", ")));
+    flog(&format!("[FILES] {}: {} files missing after extraction: {}", title, missing.len(), missing.join(", ")));
 
 }
 
@@ -162,7 +161,7 @@ pub fn release_archive_if_intact(title: &str, folder: &str) {
 
     }
 
-    flog(&format!("[FILES] {}: {} files removed while the game ran: {}", title, missing.len(), missing.join(", ")));
+    flog(&format!("[FILES] {}: {} files missing after launch: {}", title, missing.len(), missing.join(", ")));
 
 }
 
@@ -171,7 +170,6 @@ pub fn status(folder: &Path) -> GameFilesStatus {
     GameFilesStatus {
         missing: missing_files(folder),
         can_restore: archive_in(folder).is_some(),
-        protection_on: crate::defender::realtime_protection_on(),
     }
 
 }
@@ -197,7 +195,6 @@ pub fn restore(title: &str, folder: &Path) -> Result<GameFilesStatus, String> {
     Ok(GameFilesStatus {
         missing: after,
         can_restore: archive_in(folder).is_some(),
-        protection_on: crate::defender::realtime_protection_on(),
     })
 
 }

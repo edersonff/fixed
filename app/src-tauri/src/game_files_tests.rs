@@ -61,13 +61,3 @@ fn archive_decision_keeps_when_files_missing() {
 
 }
 
-#[test]
-fn defender_status_parses_powershell_output() {
-
-    assert_eq!(crate::defender::parse_bool_line("True\r\n"), Some(true));
-
-    assert_eq!(crate::defender::parse_bool_line("False"), Some(false));
-
-    assert_eq!(crate::defender::parse_bool_line(""), None);
-
-}

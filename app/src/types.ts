@@ -128,6 +128,4 @@ export type GameFilesStatus = {
 
   canRestore: boolean;
 
-  protectionOn: boolean | null;
-
 };

@@ -5,7 +5,6 @@ use librqbit::SessionOptions;
 use tauri::Manager;
 
 mod commands;
-mod defender;
 mod game_files;
 mod game_process;
 mod helpers;

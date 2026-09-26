@@ -275,7 +275,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .lib-meta { display: flex; align-items: center; gap: 8px; margin-top: 7px; color: var(--muted); font-size: var(--size-meta); }
 .lib-body .ready-actions { flex-wrap: wrap; margin-top: 12px; }
 .lib-body .play { width: 100%; justify-content: center; opacity: 0; }
-.lib-card:hover .play, .lib-card:focus-within .play { opacity: 1; }
+.lib-card:hover .play, .lib-card:focus-within .play, .lib-body .play.needs-repair { opacity: 1; }
 .lib-body .ghost { min-height: 32px; height: 32px; flex: 1 1 auto; padding: 0 10px; font-size: 11px; }
 .action-icon { display: inline-flex; transition: transform var(--dur-micro) var(--ease-standard); }
 .action-button:hover .action-icon, .hero-cta:hover .action-icon { transform: translateY(2px); }

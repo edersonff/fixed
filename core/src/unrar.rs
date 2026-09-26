@@ -140,11 +140,18 @@ pub fn list_archive_entries(archive_path: &str) -> Result<Vec<String>, String> {
 
     require_success(&output)?;
 
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(|line| line.trim_end_matches('\r').to_string())
+    Ok(parse_listing(&String::from_utf8_lossy(&output.stdout)))
+
+}
+
+// bundled unrar 7.30 beta appends the four literal characters `\x0d` (not an actual carriage
+// return) before the real newline on every `lb` line, on every flag variant we tried.
+fn parse_listing(text: &str) -> Vec<String> {
+
+    text.lines()
+        .map(|line| line.trim_end_matches('\r').trim_end_matches("\\x0d").to_string())
         .filter(|line| !line.is_empty())
-        .collect())
+        .collect()
 
 }
 
@@ -193,3 +200,7 @@ pub fn extract_entries(archive_path: &str, dest_dir: &str, entries: &[String]) -
     Ok(total)
 
 }
+
+#[cfg(test)]
+#[path = "unrar_tests.rs"]
+mod unrar_tests;
