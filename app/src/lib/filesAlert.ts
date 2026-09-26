@@ -1,4 +1,4 @@
-import { displayTitle } from "./format";
+import { displayTitle } from "./format.ts";
 
 import type { InstalledGame } from "../types";
 
@@ -101,5 +101,24 @@ export function isAlertVisible(status: RestoreStatus, affected: AffectedGame[], 
   }
 
   return affected.length > 0 && !hidden;
+
+}
+
+export type RestoreResult = {
+  success: boolean;
+  removedAgain: boolean;
+};
+
+export function restoreOutcome(gamesAfter: InstalledGame[], anyRemovedAgain: boolean): RestoreResult {
+
+  const stillMissing = gamesAfter.some((game) => game.missingFiles > 0);
+
+  if (!stillMissing) {
+
+    return { success: true, removedAgain: false };
+
+  }
+
+  return { success: false, removedAgain: anyRemovedAgain };
 
 }

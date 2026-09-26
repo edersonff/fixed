@@ -1,6 +1,12 @@
+use std::collections::HashSet;
+
 use std::path::Path;
 
 use std::path::PathBuf;
+
+use std::sync::Mutex;
+
+use std::sync::OnceLock;
 
 use crate::flog;
 
@@ -113,6 +119,48 @@ pub fn extract_and_verify(title: &str, folder: &str) -> Result<u32, String> {
 
 }
 
+fn restoring_titles() -> &'static Mutex<HashSet<String>> {
+
+    static TITLES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+
+    TITLES.get_or_init(|| Mutex::new(HashSet::new()))
+
+}
+
+pub(crate) fn is_restoring(title: &str) -> bool {
+
+    restoring_titles().lock().unwrap().contains(title)
+
+}
+
+// RAII so every exit path of restore() — including the early `?` on a corrupt archive —
+// clears the title, never leaving it stuck "restoring" for delete_game_download to block on forever.
+struct RestoringGuard {
+    title: String,
+}
+
+impl RestoringGuard {
+
+    fn new(title: &str) -> Self {
+
+        restoring_titles().lock().unwrap().insert(title.to_string());
+
+        RestoringGuard { title: title.to_string() }
+
+    }
+
+}
+
+impl Drop for RestoringGuard {
+
+    fn drop(&mut self) {
+
+        restoring_titles().lock().unwrap().remove(&self.title);
+
+    }
+
+}
+
 pub fn status(folder: &Path) -> GameFilesStatus {
 
     GameFilesStatus {
@@ -132,6 +180,8 @@ pub(crate) fn files_removed_again(restored: &[String], missing_now: &[String]) -
 }
 
 pub fn restore(title: &str, folder: &Path) -> Result<RestoreOutcome, String> {
+
+    let _guard = RestoringGuard::new(title);
 
     let missing_before = missing_files(folder);
 
@@ -205,6 +255,12 @@ pub async fn restore_game_files(title: String) -> Result<RestoreOutcome, String>
 
 #[tauri::command]
 pub async fn delete_game_download(title: String) -> Result<u64, String> {
+
+    if is_restoring(&title) {
+
+        return Err(String::from("Wait until the files finish restoring."));
+
+    }
 
     let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
 

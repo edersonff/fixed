@@ -91,7 +91,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 
 .modal-actions .hero-cta { margin-top: 0; min-width: 0; }
 
-.files-alert { position: relative; display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; padding: 14px 16px; border: 1px solid rgba(255, 122, 122, 0.35); border-radius: 14px; background: rgba(255, 90, 80, 0.1); }
+.files-alert { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; margin-bottom: 18px; padding: 14px 16px; border: 1px solid rgba(255, 122, 122, 0.35); border-radius: 14px; background: rgba(255, 90, 80, 0.1); }
 
 .files-alert-ok { border-color: rgba(198, 255, 74, 0.4); background: rgba(198, 255, 74, 0.1); }
 
@@ -105,7 +105,7 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 
 .files-alert-body p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
 
-.files-alert-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+.files-alert-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; min-width: 0; max-width: 100%; align-items: center; gap: 8px; }
 
 .files-alert .hero-cta { margin-top: 0; min-height: 34px; min-width: 0; padding: 0 14px; font-size: 12px; }
 

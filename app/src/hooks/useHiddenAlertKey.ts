@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const HIDE_KEY = "files-alert-hidden";
 
@@ -30,6 +30,20 @@ function writeHiddenKey(key: string): void {
 
 }
 
+function clearHiddenKey(): void {
+
+  try {
+
+    window.localStorage.removeItem(HIDE_KEY);
+
+  } catch {
+
+    return;
+
+  }
+
+}
+
 export function useHiddenAlertKey(currentKey: string) {
 
   const [hiddenKey, setHiddenKey] = useState(readHiddenKey);
@@ -41,6 +55,18 @@ export function useHiddenAlertKey(currentKey: string) {
     setHiddenKey(currentKey);
 
   }, [currentKey]);
+
+  useEffect(() => {
+
+    if (currentKey === "" && hiddenKey !== "") {
+
+      clearHiddenKey();
+
+      setHiddenKey("");
+
+    }
+
+  }, [currentKey, hiddenKey]);
 
   return { hiddenKey, hide };
 

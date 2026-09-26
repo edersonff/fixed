@@ -86,3 +86,41 @@ fn files_removed_again_is_false_when_the_restored_files_stay() {
     assert!(!files_removed_again(&restored, &[]));
 
 }
+
+#[test]
+fn restoring_guard_marks_and_clears_the_title() {
+
+    let title = "GuardHappyPath";
+
+    assert!(!is_restoring(title));
+
+    let guard = RestoringGuard::new(title);
+
+    assert!(is_restoring(title));
+
+    drop(guard);
+
+    assert!(!is_restoring(title));
+
+}
+
+#[test]
+fn restoring_guard_clears_on_early_return_via_question_mark() {
+
+    let title = "GuardEarlyReturn";
+
+    fn fails_after_guard(title: &str) -> Result<(), String> {
+
+        let _guard = RestoringGuard::new(title);
+
+        Err::<(), String>(String::from("boom"))?;
+
+        Ok(())
+
+    }
+
+    assert!(fails_after_guard(title).is_err());
+
+    assert!(!is_restoring(title));
+
+}

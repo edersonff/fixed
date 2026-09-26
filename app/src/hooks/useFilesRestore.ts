@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
+import { restoreOutcome } from "../lib/filesAlert";
+
 import type { AffectedGame, RestoreStatus } from "../lib/filesAlert";
 
-import type { RestoreOutcome } from "../types";
+import type { InstalledGame, RestoreOutcome } from "../types";
 
 const SUCCESS_MS = 4000;
 
@@ -30,7 +32,7 @@ async function restoreAll(titles: string[]): Promise<boolean> {
 
 }
 
-export function useFilesRestore(liveAffected: AffectedGame[], onSettled: () => void) {
+export function useFilesRestore(liveAffected: AffectedGame[], onSettled: () => Promise<InstalledGame[]>) {
 
   const [status, setStatus] = useState<RestoreStatus>("idle");
 
@@ -70,15 +72,17 @@ export function useFilesRestore(liveAffected: AffectedGame[], onSettled: () => v
 
     const watchingTimer = window.setTimeout(() => setStatus("watching"), WATCHING_LABEL_DELAY_MS);
 
-    restoreAll(titles).then((again) => {
+    restoreAll(titles).then(async (again) => {
 
       window.clearTimeout(watchingTimer);
 
-      onSettled();
+      const gamesAfter = await onSettled();
 
-      setRemovedAgain(again);
+      const outcome = restoreOutcome(gamesAfter, again);
 
-      setStatus(again ? "idle" : "success");
+      setRemovedAgain(outcome.removedAgain);
+
+      setStatus(outcome.success ? "success" : "idle");
 
     });
 
