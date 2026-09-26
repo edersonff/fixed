@@ -34,6 +34,7 @@ fn tasklist_reports_running_is_case_insensitive() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 fn strip_bundle_paths_removes_appimage_entries_and_keeps_system_paths() {
 
@@ -47,6 +48,7 @@ fn strip_bundle_paths_removes_appimage_entries_and_keeps_system_paths() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 fn strip_bundle_paths_keeps_a_clean_path_intact() {
 
@@ -58,6 +60,7 @@ fn strip_bundle_paths_keeps_a_clean_path_intact() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 fn strip_bundle_paths_empties_a_fully_polluted_value() {
 
@@ -69,6 +72,7 @@ fn strip_bundle_paths_empties_a_fully_polluted_value() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 fn strip_bundle_paths_strips_every_ld_library_entry_of_the_bundle() {
 
@@ -82,6 +86,7 @@ fn strip_bundle_paths_strips_every_ld_library_entry_of_the_bundle() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 fn carries_bundle_path_detects_pythonhome_pointing_into_bundle() {
 
@@ -93,6 +98,7 @@ fn carries_bundle_path_detects_pythonhome_pointing_into_bundle() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 fn carries_bundle_path_false_for_system_values() {
 

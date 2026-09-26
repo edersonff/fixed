@@ -116,7 +116,7 @@ fn bundle_markers() -> Vec<String> {
 
 }
 
-#[cfg(any(not(windows), test))]
+#[cfg(not(windows))]
 pub(crate) fn strip_bundle_paths(value: &str, markers: &[String]) -> String {
 
     let kept: Vec<std::path::PathBuf> = std::env::split_paths(value)
@@ -145,7 +145,7 @@ pub(crate) fn strip_bundle_paths(value: &str, markers: &[String]) -> String {
 
 }
 
-#[cfg(any(not(windows), test))]
+#[cfg(not(windows))]
 pub(crate) fn carries_bundle_path(value: &str, markers: &[String]) -> bool {
 
     markers.iter().any(|marker| value.contains(marker.as_str()))
