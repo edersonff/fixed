@@ -43,7 +43,7 @@ fn main() {
 
         "/home/eder/games/Friendly Steps/Friendly Steps/",
 
-        fix_core::ONLINE_FIX_LAUNCH_OPTIONS,
+        fix_core::launch_options(),
 
     ) {
 

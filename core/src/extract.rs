@@ -10,7 +10,10 @@ pub fn install_plugin(archive_path: &str, game_dir: &str) -> Result<u32, String>
 
     if data.starts_with(b"MZ") {
 
-        let name = archive_path.rsplit('/').next().unwrap_or("plugin.dll");
+        let name = std::path::Path::new(archive_path)
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_else(|| String::from("plugin.dll"));
 
         let plugins_dir = format!("{}/BepInEx/plugins", game_dir);
 
@@ -162,17 +165,15 @@ fn place_extracted(source: &str, game_dir: &str) -> Result<u32, String> {
 
         }
 
-        let relative = path
+        let relative_path = path
 
             .strip_prefix(source)
 
-            .map_err(|error| format!("relative: {}", error))?
+            .map_err(|error| format!("relative: {}", error))?;
 
-            .to_string_lossy()
+        let relative = relative_path.to_string_lossy().to_string();
 
-            .to_string();
-
-        let base = relative.rsplit('/').next().unwrap_or("").to_lowercase();
+        let base = relative_path.file_name().map(|name| name.to_string_lossy().to_lowercase()).unwrap_or_default();
 
         if PLUGIN_META_FILES.contains(&base.as_str()) {
 
@@ -180,7 +181,7 @@ fn place_extracted(source: &str, game_dir: &str) -> Result<u32, String> {
 
         }
 
-        let root_dll = !relative.contains('/') && relative.to_lowercase().ends_with(".dll");
+        let root_dll = relative_path.components().count() == 1 && relative.to_lowercase().ends_with(".dll");
 
         let dest = if root_dll {
 

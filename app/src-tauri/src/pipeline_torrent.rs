@@ -24,7 +24,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
         .map_err(|error| log_fail(&title, "torrent fetch", error))?;
 
-    let safe_title = title.replace('/', "_");
+    let safe_title = crate::safe_title(&title);
 
     if let Ok(active) = engine.torrents.lock() {
 

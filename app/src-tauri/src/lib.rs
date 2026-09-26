@@ -14,9 +14,12 @@ mod launch_progress;
 mod library;
 mod pipeline_http;
 mod plugin;
+mod quiet_command;
 mod steam_client;
 pub mod steam_ipc;
 mod steam_root;
+mod steam_user;
+mod user_error;
 mod pipeline_torrent;
 mod state;
 

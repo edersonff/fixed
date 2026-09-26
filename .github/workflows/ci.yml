@@ -57,17 +57,10 @@ jobs:
         env:
           RUSTFLAGS: -D warnings
 
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: core
-
       - name: Core tests
         working-directory: core
-        run: cargo test --verbose
+        run: cargo test
+
+      - name: App tests
+        working-directory: app/src-tauri
+        run: cargo test --lib

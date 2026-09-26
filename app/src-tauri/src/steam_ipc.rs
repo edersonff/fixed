@@ -11,7 +11,7 @@ pub fn cef_flag_path() -> Option<std::path::PathBuf> {
 
 pub fn ensure_cef_flag() -> Result<bool, String> {
 
-    let path = cef_flag_path().ok_or_else(|| String::from("steam root not found"))?;
+    let path = cef_flag_path().ok_or_else(|| String::from(crate::user_error::STEAM_NOT_INSTALLED))?;
 
     if path.exists() {
 

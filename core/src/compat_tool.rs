@@ -56,6 +56,12 @@ pub(crate) fn insert_mapping(body: &str, appid: u32, tool: &str) -> Option<Strin
 // this machine had a CompatToolMapping entry, the two our app wrote had none.
 pub fn is_compat_tool_mapped(steam_root: &str, appid: u32) -> bool {
 
+    if !compat_tool_needed() {
+
+        return true;
+
+    }
+
     std::fs::read_to_string(config_vdf_path(steam_root))
 
         .map(|body| has_mapping(&body, appid))
@@ -64,7 +70,21 @@ pub fn is_compat_tool_mapped(steam_root: &str, appid: u32) -> bool {
 
 }
 
+// Windows runs the .exe natively; a Proton mapping there is dead config and, read as "unmapped",
+// forced a Steam restart on every Play.
+pub fn compat_tool_needed() -> bool {
+
+    !cfg!(windows)
+
+}
+
 pub fn ensure_compat_tool(steam_root: &str, appid: u32, tool: &str) -> Result<bool, String> {
+
+    if !compat_tool_needed() {
+
+        return Ok(false);
+
+    }
 
     let path = config_vdf_path(steam_root);
 
