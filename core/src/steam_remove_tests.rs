@@ -165,3 +165,28 @@ fn remove_steam_shortcut_with_three_entries_keeps_the_survivors_contiguous() {
     assert!(crate::find_shortcut_appid(path, "Bar").is_none());
 
 }
+
+#[test]
+fn remove_by_appid_drops_only_that_entry_whatever_its_name() {
+
+    let dir = tempfile::tempdir().unwrap();
+
+    let path = dir.path().join("shortcuts.vdf");
+
+    std::fs::write(&path, empty_shortcuts_vdf()).unwrap();
+
+    let path = path.to_str().unwrap();
+
+    let colon = crate::add_steam_shortcut(path, "Game: Subtitle", "/g/Game_ Subtitle/g.exe", "/g/Game_ Subtitle/", "").unwrap();
+
+    crate::add_steam_shortcut(path, "Other", "/g/Other/o.exe", "/g/Other/", "").unwrap();
+
+    assert!(remove_steam_shortcut_by_appid(path, colon).unwrap());
+
+    assert_eq!(crate::find_shortcut_appid(path, "Game: Subtitle"), None);
+
+    assert!(crate::find_shortcut_appid(path, "Other").is_some());
+
+    assert!(!remove_steam_shortcut_by_appid(path, colon).unwrap());
+
+}

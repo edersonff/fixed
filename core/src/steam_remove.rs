@@ -1,6 +1,7 @@
 use crate::backup_vdf;
 use crate::digits_before;
 use crate::find_subslice;
+use crate::vdf_int;
 use crate::vdf_string;
 
 fn skip_cstring(data: &[u8], pos: usize) -> Option<usize> {
@@ -137,15 +138,34 @@ pub fn remove_steam_shortcut(vdf_path: &str, app_name: &str) -> Result<bool, Str
 
     };
 
-    let appid_pos = seg_start + relative;
+    remove_entry_at(vdf_path, &data, seg_start + relative)
 
-    let Some(header_start) = entry_header_start(&data, appid_pos) else {
+}
+
+// Steam writes appid as each entry's first field, so the marker sits right after the entry header.
+pub fn remove_steam_shortcut_by_appid(vdf_path: &str, appid: u32) -> Result<bool, String> {
+
+    let data = std::fs::read(vdf_path).map_err(|error| format!("read {}: {}", vdf_path, error))?;
+
+    let Some(appid_pos) = find_subslice(&data, &vdf_int("appid", appid), 0) else {
 
         return Ok(false);
 
     };
 
-    let Some(entry_end) = skip_vdf_object(&data, appid_pos) else {
+    remove_entry_at(vdf_path, &data, appid_pos)
+
+}
+
+fn remove_entry_at(vdf_path: &str, data: &[u8], appid_pos: usize) -> Result<bool, String> {
+
+    let Some(header_start) = entry_header_start(data, appid_pos) else {
+
+        return Ok(false);
+
+    };
+
+    let Some(entry_end) = skip_vdf_object(data, appid_pos) else {
 
         return Ok(false);
 
@@ -159,7 +179,7 @@ pub fn remove_steam_shortcut(vdf_path: &str, app_name: &str) -> Result<bool, Str
 
     let renumbered = renumber_entries(&trimmed);
 
-    backup_vdf(vdf_path, &data)?;
+    backup_vdf(vdf_path, data)?;
 
     std::fs::write(vdf_path, &renumbered).map_err(|error| format!("write {}: {}", vdf_path, error))?;
 

@@ -43,3 +43,33 @@ fn start_dir_ends_with_the_platform_separator() {
     assert_eq!(start_dir_of(&exe.to_string_lossy()), expected);
 
 }
+
+#[cfg(unix)]
+#[test]
+fn game_folder_reuses_an_existing_install_whose_raw_title_was_legal() {
+
+    let _guard = crate::test_support::HOME_ENV_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+
+    let home = tempfile::tempdir().unwrap();
+
+    let previous = std::env::var("HOME").ok();
+
+    std::env::set_var("HOME", home.path());
+
+    let fresh = game_folder("Game: Subtitle").unwrap();
+
+    std::fs::create_dir_all(home.path().join("games").join("Game: Subtitle")).unwrap();
+
+    let legacy = game_folder("Game: Subtitle").unwrap();
+
+    if let Some(value) = previous {
+
+        std::env::set_var("HOME", value);
+
+    }
+
+    assert!(fresh.ends_with("Game_ Subtitle"));
+
+    assert!(legacy.ends_with("Game: Subtitle"));
+
+}

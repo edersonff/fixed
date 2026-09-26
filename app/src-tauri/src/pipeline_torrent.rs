@@ -46,7 +46,7 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
     }
 
-    let folder = crate::game_folder(&safe_title)
+    let folder = crate::game_folder(&title)
 
         .ok_or_else(|| log_fail(&title, "home dir", String::from("HOME and USERPROFILE unset")))?;
 

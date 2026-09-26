@@ -20,7 +20,7 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
     let safe_title = crate::safe_title(&title);
 
-    let folder = crate::game_folder(&safe_title)
+    let folder = crate::game_folder(&title)
 
         .ok_or_else(|| log_fail(&title, "home dir", String::from("HOME and USERPROFILE unset")))?;
 

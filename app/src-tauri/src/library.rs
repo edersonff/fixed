@@ -175,21 +175,29 @@ fn resolve_uninstall_target(title: &str) -> Result<std::path::PathBuf, String> {
 
 }
 
-fn remove_steam_registration(title: &str) -> Result<Vec<String>, String> {
+// The shortcut's AppName is the catalog title while the library knows only the folder name
+// (safe_title strips ':' '?' ...), so the entry is found by the exe inside the folder.
+fn remove_steam_registration(title: &str, folder: &std::path::Path) -> Result<Vec<String>, String> {
 
     if crate::steam_client::is_steam_running() {
 
-        return Err(String::from("steam is running, close it before removing this game"));
+        return Err(String::from("Close Steam before removing this game from it."));
 
     }
 
     let (vdf, root) = crate::launch::steam_paths()?;
 
-    let appid = fix_core::find_shortcut_appid(&vdf, title);
+    let mut appids = fix_core::find_game_exe(&folder.to_string_lossy())
+        .map(|exe| fix_core::find_shortcut_appids_by_exe(&vdf, &exe))
+        .unwrap_or_default();
+
+    appids.extend(fix_core::find_shortcut_appid(&vdf, title));
+
+    appids.dedup();
 
     let mut removed = Vec::new();
 
-    if let Some(appid) = appid {
+    for appid in appids {
 
         if fix_core::remove_compat_tool(&root.to_string_lossy(), appid)? {
 
@@ -197,11 +205,11 @@ fn remove_steam_registration(title: &str) -> Result<Vec<String>, String> {
 
         }
 
-    }
+        if fix_core::remove_steam_shortcut_by_appid(&vdf, appid)? {
 
-    if fix_core::remove_steam_shortcut(&vdf, title)? {
+            removed.push(String::from("steam shortcut"));
 
-        removed.push(String::from("steam shortcut"));
+        }
 
     }
 
@@ -218,7 +226,7 @@ pub fn uninstall_game(title: String, remove_from_steam: bool) -> Result<String, 
 
     if remove_from_steam {
 
-        removed = remove_steam_registration(&title)?;
+        removed = remove_steam_registration(&title, &target)?;
 
     }
 
