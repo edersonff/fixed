@@ -78,8 +78,28 @@ fn settle_and_check(folder: &Path) -> Vec<String> {
 
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum ArchiveDecision {
+    Keep,
+    Delete,
+}
+
 // The archive stays until every listed file is still on disk after the settle; otherwise it is the
 // only source the restore can pull the removed files back from.
+pub(crate) fn archive_decision(missing: &[String]) -> ArchiveDecision {
+
+    if missing.is_empty() {
+
+        ArchiveDecision::Delete
+
+    } else {
+
+        ArchiveDecision::Keep
+
+    }
+
+}
+
 fn after_extract(title: &str, folder: &str) {
 
     let folder_path = Path::new(folder);
@@ -108,7 +128,7 @@ fn after_extract(title: &str, folder: &str) {
 
     let missing = settle_and_check(folder_path);
 
-    if missing.is_empty() {
+    if archive_decision(&missing) == ArchiveDecision::Delete {
 
         crate::delete_installers(folder);
 
@@ -134,7 +154,7 @@ pub fn release_archive_if_intact(title: &str, folder: &str) {
 
     let missing = settle_and_check(Path::new(folder));
 
-    if missing.is_empty() {
+    if archive_decision(&missing) == ArchiveDecision::Delete {
 
         crate::delete_installers(folder);
 
@@ -168,7 +188,7 @@ pub fn restore(title: &str, folder: &Path) -> Result<GameFilesStatus, String> {
 
     let after = settle_and_check(folder);
 
-    if after.is_empty() {
+    if archive_decision(&after) == ArchiveDecision::Delete {
 
         crate::delete_installers(&folder.to_string_lossy());
 

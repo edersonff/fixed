@@ -226,11 +226,9 @@ pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url:
 
                 let extract_title = pipeline_title.clone();
 
-                let extract_result = tokio::task::spawn_blocking(move || crate::game_files::extract_and_verify(&extract_title, &extract_folder))
+                let extract_engine = pipeline_app.state::<DownloadEngine>();
 
-                    .await
-
-                    .unwrap_or_else(|error| Err(format!("join: {}", error)));
+                let extract_result = crate::extract_tracked(&*extract_engine, pipeline_safe_title.clone(), extract_title, extract_folder).await;
 
                 let final_state = match extract_result {
 

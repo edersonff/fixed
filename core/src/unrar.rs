@@ -134,7 +134,7 @@ pub fn extract_archive(archive_path: &str, dest_dir: &str) -> Result<u32, String
 // Bare listing: one archive-relative path per line, directories included.
 pub fn list_archive_entries(archive_path: &str) -> Result<Vec<String>, String> {
 
-    let args = vec![String::from("lb"), format!("-p{}", RAR_PASSWORD), archive_path.to_string()];
+    let args = vec![String::from("lb"), String::from("-scfr"), format!("-p{}", RAR_PASSWORD), archive_path.to_string()];
 
     let output = run_unrar(&args)?;
 
@@ -148,13 +148,11 @@ pub fn list_archive_entries(archive_path: &str) -> Result<Vec<String>, String> {
 
 }
 
-pub fn extract_entries(archive_path: &str, dest_dir: &str, entries: &[String]) -> Result<u32, String> {
+// Windows caps a process command line at 32767 chars, so a long missing-files list is split
+// across several unrar calls instead of risking one oversized argv.
+const EXTRACT_CHUNK_SIZE: usize = 100;
 
-    if entries.is_empty() {
-
-        return Ok(0);
-
-    }
+fn extract_entries_chunk(archive_path: &str, dest_dir: &str, entries: &[String]) -> Result<u32, String> {
 
     let mut args = vec![
         String::from("x"),
@@ -173,5 +171,25 @@ pub fn extract_entries(archive_path: &str, dest_dir: &str, entries: &[String]) -
     require_success(&output)?;
 
     Ok(extracted_count(&output))
+
+}
+
+pub fn extract_entries(archive_path: &str, dest_dir: &str, entries: &[String]) -> Result<u32, String> {
+
+    if entries.is_empty() {
+
+        return Ok(0);
+
+    }
+
+    let mut total = 0;
+
+    for chunk in entries.chunks(EXTRACT_CHUNK_SIZE) {
+
+        total += extract_entries_chunk(archive_path, dest_dir, chunk)?;
+
+    }
+
+    Ok(total)
 
 }

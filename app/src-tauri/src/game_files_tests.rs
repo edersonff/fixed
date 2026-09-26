@@ -48,6 +48,20 @@ fn archive_in_ignores_files_that_are_not_rar() {
 }
 
 #[test]
+fn archive_decision_deletes_when_nothing_missing() {
+
+    assert_eq!(archive_decision(&[]), ArchiveDecision::Delete);
+
+}
+
+#[test]
+fn archive_decision_keeps_when_files_missing() {
+
+    assert_eq!(archive_decision(&[String::from("Game/OnlineFix64.dll")]), ArchiveDecision::Keep);
+
+}
+
+#[test]
 fn defender_status_parses_powershell_output() {
 
     assert_eq!(crate::defender::parse_bool_line("True\r\n"), Some(true));

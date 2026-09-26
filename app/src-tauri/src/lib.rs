@@ -172,7 +172,7 @@ pub fn run() {
 
         .plugin(tauri_plugin_dialog::init())
 
-        .manage(DownloadEngine { session: std::sync::Mutex::new(None), cancels: std::sync::Mutex::new(std::collections::HashMap::new()), torrents: std::sync::Mutex::new(std::collections::HashMap::new()) })
+        .manage(DownloadEngine { session: std::sync::Mutex::new(None), cancels: std::sync::Mutex::new(std::collections::HashMap::new()), torrents: std::sync::Mutex::new(std::collections::HashMap::new()), extracting: std::sync::Mutex::new(std::collections::HashSet::new()) })
 
         .on_window_event(|window, event| {
 

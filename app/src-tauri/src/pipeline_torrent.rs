@@ -196,11 +196,17 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
                     let blocking_title = extract_title.clone();
 
-                    let result = tokio::task::spawn_blocking(move || crate::game_files::extract_and_verify(&blocking_title, &blocking_folder))
+                    let result = match extract_app.try_state::<DownloadEngine>() {
 
-                        .await
+                        Some(engine) => crate::extract_tracked(&*engine, emit_safe_title.clone(), blocking_title, blocking_folder).await,
 
-                        .unwrap_or_else(|error| Err(format!("join: {}", error)));
+                        None => tokio::task::spawn_blocking(move || crate::game_files::extract_and_verify(&blocking_title, &blocking_folder))
+
+                            .await
+
+                            .unwrap_or_else(|error| Err(format!("join: {}", error))),
+
+                    };
 
                     let final_state = match result {
 
