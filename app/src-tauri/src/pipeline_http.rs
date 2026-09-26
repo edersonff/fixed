@@ -10,6 +10,15 @@ use tauri::Manager;
 
 pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: String, build: Option<String>) -> Result<String, String> {
 
+    run_http_download(app, title, lane_url, build).await
+
+}
+
+// Shared by the Download button (a hosters lane the person picked) and the Fix flow (a hosters
+// lane resolved automatically for a game whose archive is gone) — one pipeline, one set of
+// download-progress events, never two copies of the same extract-then-register-with-steam logic.
+pub(crate) async fn run_http_download(app: tauri::AppHandle, title: String, lane_url: String, build: Option<String>) -> Result<String, String> {
+
     let mirror_url = fix_core::mirror_download_url(&lane_url)
 
         .map_err(|error| log_fail(&title, "mirror resolve", error))?

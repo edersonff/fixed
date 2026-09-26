@@ -33,6 +33,54 @@ fn no_manifest_means_nothing_missing() {
 }
 
 #[test]
+fn missing_files_unions_manifest_and_dlllist_without_duplicates() {
+
+    let dir = tempfile::tempdir().unwrap();
+
+    let game_dir = dir.path().join("Game");
+
+    std::fs::create_dir_all(&game_dir).unwrap();
+
+    std::fs::write(game_dir.join("Game.exe"), b"x").unwrap();
+
+    std::fs::write(dir.path().join(MANIFEST), "Game/OnlineFix64.dll\nGame/OnlineFix.ini").unwrap();
+
+    std::fs::write(game_dir.join("dlllist.txt"), "SteamOverlay64.dll\r\nOnlineFix64.dll").unwrap();
+
+    let mut missing = missing_files(dir.path());
+
+    missing.sort();
+
+    assert_eq!(
+        missing,
+        vec![String::from("Game/OnlineFix.ini"), String::from("Game/OnlineFix64.dll"), String::from("Game/SteamOverlay64.dll")],
+    );
+
+}
+
+#[test]
+fn match_missing_to_archive_finds_by_case_insensitive_suffix() {
+
+    let missing = vec![String::from("Game/OnlineFix64.dll")];
+
+    let archive_entries = vec![String::from("Install/game/ONLINEFIX64.DLL"), String::from("Install/game/other.dll")];
+
+    assert_eq!(match_missing_to_archive(&missing, &archive_entries), vec![String::from("Install/game/ONLINEFIX64.DLL")]);
+
+}
+
+#[test]
+fn match_missing_to_archive_drops_an_entry_the_archive_never_had() {
+
+    let missing = vec![String::from("Game/NeverPacked.dll")];
+
+    let archive_entries = vec![String::from("Game/OnlineFix64.dll")];
+
+    assert!(match_missing_to_archive(&missing, &archive_entries).is_empty());
+
+}
+
+#[test]
 fn archive_in_ignores_files_that_are_not_rar() {
 
     let dir = tempfile::tempdir().unwrap();
@@ -44,26 +92,6 @@ fn archive_in_ignores_files_that_are_not_rar() {
     std::fs::write(dir.path().join("real.rar"), b"Rar!\x1a\x07\x01\x00rest").unwrap();
 
     assert_eq!(archive_in(dir.path()), Some(dir.path().join("real.rar")));
-
-}
-
-#[test]
-fn download_bytes_is_zero_without_an_archive() {
-
-    let dir = tempfile::tempdir().unwrap();
-
-    assert_eq!(download_bytes(dir.path()), 0);
-
-}
-
-#[test]
-fn download_bytes_reports_the_kept_archive_size() {
-
-    let dir = tempfile::tempdir().unwrap();
-
-    std::fs::write(dir.path().join("real.rar"), b"Rar!\x1a\x07\x01\x00rest").unwrap();
-
-    assert_eq!(download_bytes(dir.path()), 12);
 
 }
 
@@ -84,43 +112,5 @@ fn files_removed_again_is_false_when_the_restored_files_stay() {
     let restored = vec![String::from("Game/OnlineFix64.dll"), String::from("Game/winmm.dll")];
 
     assert!(!files_removed_again(&restored, &[]));
-
-}
-
-#[test]
-fn restoring_guard_marks_and_clears_the_title() {
-
-    let title = "GuardHappyPath";
-
-    assert!(!is_restoring(title));
-
-    let guard = RestoringGuard::new(title);
-
-    assert!(is_restoring(title));
-
-    drop(guard);
-
-    assert!(!is_restoring(title));
-
-}
-
-#[test]
-fn restoring_guard_clears_on_early_return_via_question_mark() {
-
-    let title = "GuardEarlyReturn";
-
-    fn fails_after_guard(title: &str) -> Result<(), String> {
-
-        let _guard = RestoringGuard::new(title);
-
-        Err::<(), String>(String::from("boom"))?;
-
-        Ok(())
-
-    }
-
-    assert!(fails_after_guard(title).is_err());
-
-    assert!(!is_restoring(title));
 
 }

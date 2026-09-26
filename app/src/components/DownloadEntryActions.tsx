@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 
-import { PackagePlus } from "lucide-react";
+import { PackagePlus, Play, Wrench } from "lucide-react";
 
-import { Play } from "lucide-react";
+import { FixBlockedNote } from "./FixBlockedNote";
 
 import { useGameLaunch } from "../hooks/useGameLaunch";
 
@@ -12,7 +12,7 @@ import { EASE_POP, DUR_SHORT, actionHover, actionPressDown } from '../lib/motion
 
 export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; ready: boolean }) {
 
-  const { launching, launchMsg, launch } = useGameLaunch(gameTitle);
+  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(gameTitle);
 
   const { pluginMsg, addPlugin } = usePluginInstall(gameTitle);
 
@@ -54,19 +54,19 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
               whileTap={actionPressDown}
 
-              disabled={launching}
+              disabled={busy || removedAgain}
 
-              onClick={launch}
+              onClick={press}
 
             >
 
               <span className="action-icon">
 
-                <Play size={15} strokeWidth={2.2} />
+                {needsFix ? <Wrench size={15} strokeWidth={2.2} /> : <Play size={15} strokeWidth={2.2} />}
 
               </span>
 
-              {launching ? "Starting…" : "Play"}
+              {label}
 
             </motion.button>
 
@@ -93,9 +93,11 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
       </AnimatePresence>
 
+      {removedAgain && <FixBlockedNote />}
+
       {launchMsg && (
 
-        <p className={launchMsg.startsWith("Launch Failed") ? "launch-note launch-error" : "launch-note"}>
+        <p className={launchMsg.startsWith("Launch Failed") || launchMsg.startsWith("Fix Failed") ? "launch-note launch-error" : "launch-note"}>
 
           {launchMsg}
 

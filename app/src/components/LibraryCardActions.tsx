@@ -1,28 +1,18 @@
 import { AnimatePresence, motion } from "framer-motion";
 
-import { FolderOpen, Play, Puzzle } from "lucide-react";
+import { FolderOpen, Play, Puzzle, Wrench } from "lucide-react";
 
 import { actionHover, actionPressDown, stateVariants } from "../lib/motion";
 
-function playLabel(launching: boolean, phase: string): string {
-
-  if (phase === "running") {
-
-    return "Running";
-
-  }
-
-  return launching ? "Starting" : "Play";
-
-}
-
 export function LibraryCardActions({
 
-  launching,
+  label,
 
-  phase,
+  busy,
 
-  onLaunch,
+  needsFix,
+
+  onPress,
 
   onAddPlugin,
 
@@ -30,19 +20,19 @@ export function LibraryCardActions({
 
 }: {
 
-  launching: boolean;
+  label: string;
 
-  phase: string;
+  busy: boolean;
 
-  onLaunch: (event: React.MouseEvent) => void;
+  needsFix: boolean;
+
+  onPress: (event: React.MouseEvent) => void;
 
   onAddPlugin: (event: React.MouseEvent) => void;
 
   onOpenFolder: (event: React.MouseEvent) => void;
 
 }) {
-
-  const label = playLabel(launching, phase);
 
   return (
 
@@ -52,21 +42,21 @@ export function LibraryCardActions({
 
         type="button"
 
-        className="play action-button"
+        className={needsFix ? "play action-button fix" : "play action-button"}
 
         whileHover={actionHover}
 
         whileTap={actionPressDown}
 
-        disabled={launching || phase === "running"}
+        disabled={busy}
 
-        onClick={onLaunch}
+        onClick={onPress}
 
       >
 
         <span className="action-icon">
 
-          <Play size={16} strokeWidth={2.4} />
+          {needsFix ? <Wrench size={16} strokeWidth={2.4} /> : <Play size={16} strokeWidth={2.4} />}
 
         </span>
 

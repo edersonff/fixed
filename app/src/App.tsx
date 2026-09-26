@@ -10,8 +10,6 @@ import { DownloadsView } from "./Downloads";
 
 import { LibraryView } from "./Library";
 
-import { FilesAlert } from "./components/FilesAlert";
-
 import { Sidebar } from "./components/Sidebar";
 
 import { HomeView } from "./components/HomeView";
@@ -121,8 +119,6 @@ export default function App() {
       <Sidebar view={view} hasSelection={!!selected} appVersion={appVersion} onSwitchView={switchView} />
 
         <section className="content">
-
-          <FilesAlert />
 
           <AnimatePresence mode="wait">
 

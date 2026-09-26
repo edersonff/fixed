@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { AnimatePresence, motion } from "framer-motion";
 
-import { Download, Play } from "lucide-react";
+import { Download, Play, Wrench } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
 
@@ -60,7 +60,7 @@ export function HomeHero({
 
   const installed = useIsGameInstalled(featured?.title ?? "");
 
-  const { launching, launch } = useGameLaunch(featured?.title ?? "");
+  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(featured?.title ?? "");
 
   useEffect(() => {
 
@@ -172,19 +172,19 @@ export function HomeHero({
 
           whileTap={actionPressDown}
 
-          disabled={installed && launching}
+          disabled={installed && (busy || removedAgain)}
 
-          onClick={() => (installed ? launch() : onSelect(featured))}
+          onClick={() => (installed ? press() : onSelect(featured))}
 
         >
 
           <span className="action-icon">
 
-            {installed ? <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
+            {installed ? needsFix ? <Wrench size={17} strokeWidth={2.2} /> : <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
 
           </span>
 
-          {installed ? (launching ? "Starting" : "Play") : "Download"}
+          {installed ? label : "Download"}
 
         </motion.button>
 

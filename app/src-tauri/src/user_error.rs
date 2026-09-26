@@ -10,7 +10,13 @@ pub const PLUGIN_UNREADABLE: &str = "This plugin file could not be installed. Pi
 
 pub const GAME_EXE_MISSING: &str = "The game files are incomplete (no game .exe found). Uninstall and download it again.";
 
-const USER_FACING: [&str; 4] = [STEAM_NOT_INSTALLED, STEAM_NEVER_LOGGED_IN, STEAM_DID_NOT_START, GAME_EXE_MISSING];
+pub const GAME_FILES_MISSING: &str = "This game's files are incomplete. Press Fix instead of Play.";
+
+// Exact match with the frontend's Fix flow (hooks/useGameLaunch.ts): wording changes here must
+// move together with that comparison.
+pub const FIX_FILES_REMOVED_AGAIN: &str = "Windows keeps deleting this game's files. Turn protection off, then press Fix.";
+
+const USER_FACING: [&str; 5] = [STEAM_NOT_INSTALLED, STEAM_NEVER_LOGGED_IN, STEAM_DID_NOT_START, GAME_EXE_MISSING, GAME_FILES_MISSING];
 
 // These conditions fail identically on every launch path, so the fallback path is skipped and the
 // person gets the step they must take instead of a second, unrelated failure.

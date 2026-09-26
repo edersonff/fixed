@@ -4,6 +4,8 @@ import { Download, Play } from "lucide-react";
 
 import { Wrench } from "lucide-react";
 
+import { FixBlockedNote } from "./FixBlockedNote";
+
 import { LaneIcon } from "./LaneIcon";
 
 import { LoadingDots } from "./LoadingDots";
@@ -34,7 +36,13 @@ export function DetailLanes({
 
   updateAvailable,
 
-  launching,
+  label,
+
+  launchBusy,
+
+  needsFix,
+
+  removedAgain,
 
   onPlay,
 
@@ -52,7 +60,13 @@ export function DetailLanes({
 
   updateAvailable: boolean;
 
-  launching: boolean;
+  label: string;
+
+  launchBusy: boolean;
+
+  needsFix: boolean;
+
+  removedAgain: boolean;
 
   onPlay: () => void;
 
@@ -82,7 +96,7 @@ export function DetailLanes({
 
           onClick={installed ? onPlay : onDownload}
 
-          disabled={installed ? launching : !detail || detail.lanes.length === 0}
+          disabled={installed ? launchBusy || removedAgain : !detail || detail.lanes.length === 0}
 
           whileHover={actionHover}
 
@@ -92,15 +106,17 @@ export function DetailLanes({
 
           <span className="action-icon">
 
-            {installed ? <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
+            {installed ? needsFix ? <Wrench size={17} strokeWidth={2.2} /> : <Play size={17} strokeWidth={2.2} /> : <Download size={17} strokeWidth={2.2} />}
 
           </span>
 
-          {installed ? (launching ? "Starting" : "Play") : "Download"}
+          {installed ? label : "Download"}
 
         </motion.button>
 
       </div>
+
+      {installed && removedAgain && <FixBlockedNote />}
 
       {busy && (
 

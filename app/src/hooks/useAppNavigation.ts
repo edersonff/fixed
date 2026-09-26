@@ -8,8 +8,6 @@ import type { GameEntry } from "../types";
 
 import type { GamesPage } from "../types";
 
-import type { InstalledGame } from "../types";
-
 import type { View } from "../types";
 
 import type { useCatalog } from "./useCatalog";
@@ -40,7 +38,7 @@ export function useAppNavigation(catalog: ReturnType<typeof useCatalog>) {
 
   }
 
-  function openInstalledDetail(game: InstalledGame) {
+  function openInstalledDetail(game: { title: string }) {
 
     const searchKey = game.title.toLowerCase().replace(/[^a-z0-9]/g, "");
 

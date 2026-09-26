@@ -2,45 +2,27 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { stateVariants } from "../lib/motion";
 
-function noteClass(uninstallMsg: string, launchMsg: string, phase: string): string {
+function isError(uninstallMsg: string, launchMsg: string): boolean {
 
-  if (uninstallMsg || phase === "failed") {
+  return !!uninstallMsg || launchMsg.startsWith("Launch Failed") || launchMsg.startsWith("Fix Failed");
+
+}
+
+function noteClass(uninstallMsg: string, launchMsg: string): string {
+
+  if (isError(uninstallMsg, launchMsg)) {
 
     return "launch-note launch-error";
 
   }
 
-  if (launchMsg && phase !== "running") {
+  if (launchMsg) {
 
     return "launch-note launch-progress";
 
   }
 
   return "launch-note";
-
-}
-
-function noteKey(uninstallMsg: string, launchMsg: string, pluginMsg: string, phase: string): string {
-
-  if (uninstallMsg) {
-
-    return "uninstall";
-
-  }
-
-  if (launchMsg) {
-
-    return `launch-${phase}`;
-
-  }
-
-  if (pluginMsg) {
-
-    return "plugin";
-
-  }
-
-  return "none";
 
 }
 
@@ -52,8 +34,6 @@ export function LibraryCardNote({
 
   uninstallMsg,
 
-  phase,
-
 }: {
 
   launchMsg: string;
@@ -61,8 +41,6 @@ export function LibraryCardNote({
   pluginMsg: string;
 
   uninstallMsg: string;
-
-  phase: string;
 
 }) {
 
@@ -76,9 +54,9 @@ export function LibraryCardNote({
 
         <motion.p
 
-          key={noteKey(uninstallMsg, launchMsg, pluginMsg, phase)}
+          key={text}
 
-          className={noteClass(uninstallMsg, launchMsg, phase)}
+          className={noteClass(uninstallMsg, launchMsg)}
 
           variants={stateVariants}
 

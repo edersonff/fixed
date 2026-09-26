@@ -2,7 +2,7 @@ import { memo } from "react";
 
 import { motion } from "framer-motion";
 
-import { Download, Play } from "lucide-react";
+import { Download, Play, Wrench } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
 
@@ -61,7 +61,7 @@ function GameCardBase({
 
   const installed = useIsGameInstalled(game.title);
 
-  const { launching, launch } = useGameLaunch(game.title);
+  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(game.title);
 
   return (
 
@@ -139,7 +139,7 @@ function GameCardBase({
 
             className="quick-dl action-button press-action"
 
-            disabled={installed ? launching : quickBusy}
+            disabled={installed ? busy || removedAgain : quickBusy}
 
             onClick={(event: React.MouseEvent) => {
 
@@ -147,7 +147,7 @@ function GameCardBase({
 
               if (installed) {
 
-                launch();
+                press();
 
                 return;
 
@@ -161,11 +161,11 @@ function GameCardBase({
 
             <span className="action-icon">
 
-              {installed ? <Play size={15} strokeWidth={2.4} /> : <Download size={15} strokeWidth={2.4} />}
+              {installed ? needsFix ? <Wrench size={15} strokeWidth={2.4} /> : <Play size={15} strokeWidth={2.4} /> : <Download size={15} strokeWidth={2.4} />}
 
             </span>
 
-            {installed ? (launching ? "Starting" : "Play") : "Get"}
+            {installed ? label : "Get"}
 
           </motion.button>
 

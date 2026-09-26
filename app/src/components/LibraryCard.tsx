@@ -8,6 +8,8 @@ import { Trash2 } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
 
+import { FixBlockedNote } from "./FixBlockedNote";
+
 import { LibraryCardActions } from "./LibraryCardActions";
 
 import { LibraryCardNote } from "./LibraryCardNote";
@@ -17,8 +19,6 @@ import { LibraryCardUninstallConfirm } from "./LibraryCardUninstallConfirm";
 import { useGameAssets } from "../hooks/useGameAssets";
 
 import { useGameLaunch } from "../hooks/useGameLaunch";
-
-import { useFreeDownload } from "../hooks/useFreeDownload";
 
 import { useGameUninstall } from "../hooks/useGameUninstall";
 
@@ -60,15 +60,13 @@ export function LibraryCard({
 
   const [logoFailed, setLogoFailed] = useState(false);
 
-  const { launching, launchMsg, phase, launch } = useGameLaunch(game.title);
+  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(game.title);
 
   const { pluginMsg, addPlugin } = usePluginInstall(game.title);
 
   const { confirming, setConfirming, uninstalling, uninstallMsg, setUninstallMsg, handleUninstall } =
 
     useGameUninstall(game.title, onUninstalled);
-
-  const { freeing, freeDownload } = useFreeDownload(game.title, onUninstalled);
 
   return (
 
@@ -195,23 +193,19 @@ export function LibraryCard({
 
           </p>
 
-          {game.missingFiles > 0 && (
-
-            <p className="lib-files-missing">{game.missingFiles === 1 ? "1 file missing" : `${game.missingFiles} files missing`}</p>
-
-          )}
-
           <LibraryCardActions
 
-            launching={launching}
+            label={label}
 
-            phase={phase}
+            busy={busy || removedAgain}
 
-            onLaunch={(event) => {
+            needsFix={needsFix}
+
+            onPress={(event) => {
 
               event.stopPropagation();
 
-              launch();
+              press();
 
             }}
 
@@ -233,33 +227,9 @@ export function LibraryCard({
 
           />
 
-          {game.downloadBytes > 0 && (
+          {removedAgain && <FixBlockedNote />}
 
-            <button
-
-              type="button"
-
-              className="ghost lib-free-download"
-
-              disabled={freeing}
-
-              onClick={(event) => {
-
-                event.stopPropagation();
-
-                freeDownload();
-
-              }}
-
-            >
-
-              {freeing ? "Freeing…" : `Free ${diskSize(game.downloadBytes)}`}
-
-            </button>
-
-          )}
-
-          <LibraryCardNote launchMsg={launchMsg} pluginMsg={pluginMsg} uninstallMsg={uninstallMsg} phase={phase} />
+          <LibraryCardNote launchMsg={launchMsg} pluginMsg={pluginMsg} uninstallMsg={uninstallMsg} />
 
           <AnimatePresence>
 

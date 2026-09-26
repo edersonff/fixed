@@ -220,38 +220,6 @@ pub fn add_game_to_steam(title: &str, folder: &str) -> bool {
 
 }
 
-pub fn delete_installers(folder: &str) {
-
-    let Ok(entries) = std::fs::read_dir(folder) else {
-
-        return;
-
-    };
-
-    for entry in entries.flatten() {
-
-        let path = entry.path();
-
-        let is_rar = path.extension().map(|ext| ext == "rar").unwrap_or(false);
-
-        if !is_rar {
-
-            continue;
-
-        }
-
-        match std::fs::remove_file(&path) {
-
-            Ok(()) => flog(&format!("[DL] installer removed: {}", path.display())),
-
-            Err(error) => flog(&format!("[DL] installer remove FAILED: {}: {}", path.display(), error)),
-
-        }
-
-    }
-
-}
-
 pub fn log_fail(title: &str, step: &str, error: String) -> String {
 
     flog(&format!("[DL] {}: {} FAILED: {}", title, step, error));

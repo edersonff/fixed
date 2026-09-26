@@ -1,12 +1,6 @@
-use std::collections::HashSet;
-
 use std::path::Path;
 
 use std::path::PathBuf;
-
-use std::sync::Mutex;
-
-use std::sync::OnceLock;
 
 use crate::flog;
 
@@ -49,12 +43,6 @@ pub(crate) fn archive_in(folder: &Path) -> Option<PathBuf> {
 
 }
 
-pub fn download_bytes(folder: &Path) -> u64 {
-
-    archive_in(folder).and_then(|path| path.metadata().ok()).map(|meta| meta.len()).unwrap_or(0)
-
-}
-
 pub(crate) fn missing_entries(folder: &Path, entries: &[String]) -> Vec<String> {
 
     entries
@@ -75,7 +63,40 @@ fn read_manifest(folder: &Path) -> Vec<String> {
 
 pub fn missing_files(folder: &Path) -> Vec<String> {
 
-    missing_entries(folder, &read_manifest(folder))
+    let mut missing = missing_entries(folder, &read_manifest(folder));
+
+    for entry in crate::dlllist::missing(folder) {
+
+        if !missing.contains(&entry) {
+
+            missing.push(entry);
+
+        }
+
+    }
+
+    missing
+
+}
+
+// The manifest keeps archive-relative paths verbatim, but a dlllist-derived entry only knows the
+// path inside the install folder, which may not match the archive's own internal layout — so the
+// real extraction target is found by suffix, not assumed to equal the missing entry itself.
+pub(crate) fn match_missing_to_archive(missing: &[String], archive_entries: &[String]) -> Vec<String> {
+
+    missing
+        .iter()
+        .filter_map(|entry| {
+
+            let wanted = entry.replace('\\', "/").to_lowercase();
+
+            archive_entries
+                .iter()
+                .find(|candidate| candidate.replace('\\', "/").to_lowercase().ends_with(&wanted))
+                .cloned()
+
+        })
+        .collect()
 
 }
 
@@ -119,48 +140,6 @@ pub fn extract_and_verify(title: &str, folder: &str) -> Result<u32, String> {
 
 }
 
-fn restoring_titles() -> &'static Mutex<HashSet<String>> {
-
-    static TITLES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
-
-    TITLES.get_or_init(|| Mutex::new(HashSet::new()))
-
-}
-
-pub(crate) fn is_restoring(title: &str) -> bool {
-
-    restoring_titles().lock().unwrap().contains(title)
-
-}
-
-// RAII so every exit path of restore() — including the early `?` on a corrupt archive —
-// clears the title, never leaving it stuck "restoring" for delete_game_download to block on forever.
-struct RestoringGuard {
-    title: String,
-}
-
-impl RestoringGuard {
-
-    fn new(title: &str) -> Self {
-
-        restoring_titles().lock().unwrap().insert(title.to_string());
-
-        RestoringGuard { title: title.to_string() }
-
-    }
-
-}
-
-impl Drop for RestoringGuard {
-
-    fn drop(&mut self) {
-
-        restoring_titles().lock().unwrap().remove(&self.title);
-
-    }
-
-}
-
 pub fn status(folder: &Path) -> GameFilesStatus {
 
     GameFilesStatus {
@@ -179,31 +158,43 @@ pub(crate) fn files_removed_again(restored: &[String], missing_now: &[String]) -
 
 }
 
-pub fn restore(title: &str, folder: &Path) -> Result<RestoreOutcome, String> {
+// Shared by the interactive restore (which then watches for real-time protection removing the
+// files again) and the silent pre-launch restore (which never watches: Play cannot afford 20s).
+fn extract_missing(folder: &Path, missing_before: &[String]) -> Result<Vec<String>, String> {
 
-    let _guard = RestoringGuard::new(title);
+    let Some(archive) = archive_in(folder) else {
+
+        return Ok(Vec::new());
+
+    };
+
+    let archive_entries = fix_core::list_archive_entries(&archive.to_string_lossy())?;
+
+    let extract_list = match_missing_to_archive(missing_before, &archive_entries);
+
+    fix_core::extract_entries(&archive.to_string_lossy(), &folder.to_string_lossy(), &extract_list)?;
+
+    let missing_after = missing_files(folder);
+
+    Ok(missing_before.iter().filter(|entry| !missing_after.contains(entry)).cloned().collect())
+
+}
+
+pub fn restore(title: &str, folder: &Path) -> Result<RestoreOutcome, String> {
 
     let missing_before = missing_files(folder);
 
-    let Some(archive) = archive_in(folder) else {
+    if archive_in(folder).is_none() {
 
         flog(&format!("[FILES] {}: no archive kept, restore not possible", title));
 
         return Ok(RestoreOutcome { missing: missing_before, removed_again: false, can_restore: false });
 
-    };
+    }
 
-    let count = fix_core::extract_entries(&archive.to_string_lossy(), &folder.to_string_lossy(), &missing_before)?;
+    let restored = extract_missing(folder, &missing_before)?;
 
-    flog(&format!("[FILES] {}: restored {} of {} missing files", title, count, missing_before.len()));
-
-    let missing_after_extract = missing_files(folder);
-
-    let restored: Vec<String> = missing_before
-        .iter()
-        .filter(|entry| !missing_after_extract.contains(entry))
-        .cloned()
-        .collect();
+    flog(&format!("[FILES] {}: restored {} of {} missing files", title, restored.len(), missing_before.len()));
 
     let mut removed_again = false;
 
@@ -237,42 +228,6 @@ pub async fn game_files_status(title: String) -> Result<GameFilesStatus, String>
     let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
 
     tokio::task::spawn_blocking(move || status(Path::new(&folder)))
-        .await
-        .map_err(|error| format!("join: {}", error))
-
-}
-
-#[tauri::command]
-pub async fn restore_game_files(title: String) -> Result<RestoreOutcome, String> {
-
-    let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
-
-    tokio::task::spawn_blocking(move || restore(&title, Path::new(&folder)))
-        .await
-        .map_err(|error| format!("join: {}", error))?
-
-}
-
-#[tauri::command]
-pub async fn delete_game_download(title: String) -> Result<u64, String> {
-
-    if is_restoring(&title) {
-
-        return Err(String::from("Wait until the files finish restoring."));
-
-    }
-
-    let folder = crate::game_folder(&title).ok_or_else(|| String::from("home dir not found"))?;
-
-    tokio::task::spawn_blocking(move || {
-
-        let bytes = download_bytes(Path::new(&folder));
-
-        crate::delete_installers(&folder);
-
-        bytes
-
-    })
         .await
         .map_err(|error| format!("join: {}", error))
 

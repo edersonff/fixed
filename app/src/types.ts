@@ -116,12 +116,6 @@ export type InstalledGame = {
 
   build?: string | null;
 
-  missingFiles: number;
-
-  canRestore: boolean;
-
-  downloadBytes: number;
-
 };
 
 export type View = "home" | "library" | "downloads";
@@ -134,12 +128,12 @@ export type GameFilesStatus = {
 
 };
 
-export type RestoreOutcome = {
+export type FixProgressPayload = {
 
-  missing: string[];
+  title: string;
 
-  removedAgain: boolean;
+  phase: string;
 
-  canRestore: boolean;
+  detail: string;
 
 };

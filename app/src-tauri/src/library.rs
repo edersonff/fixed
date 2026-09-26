@@ -19,12 +19,6 @@ pub struct InstalledGame {
 
     pub build: Option<String>,
 
-    pub missing_files: usize,
-
-    pub can_restore: bool,
-
-    pub download_bytes: u64,
-
 }
 
 fn folder_bytes(dir: &std::path::Path) -> u64 {
@@ -81,12 +75,6 @@ fn read_installed(dir: &std::path::Path) -> Option<InstalledGame> {
         has_plugins,
 
         build,
-
-        missing_files: crate::game_files::missing_files(dir).len(),
-
-        can_restore: crate::game_files::archive_in(dir).is_some(),
-
-        download_bytes: crate::game_files::download_bytes(dir),
 
     })
 

@@ -399,6 +399,8 @@ async fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Resul
 // observed running, otherwise the phase turns `failed` and the card reverts to Play instead of
 // waiting forever on a URL Steam silently dropped (measured 2026-09-20: legacy fired, handler pid
 // died defunct, card sat on "Waiting for game" indefinitely).
+// The button already shows Fix instead of Play whenever files are missing, so this check is only
+// a safety net against a launch that slips through before the frontend status catches up.
 async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, String> {
 
     crate::launch_progress::emit_progress(app, title, "checking", "");
@@ -413,11 +415,13 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
     };
 
-    let removed = crate::game_files::missing_files(std::path::Path::new(&folder));
+    let missing = crate::game_files::missing_files(std::path::Path::new(&folder));
 
-    if !removed.is_empty() {
+    if !missing.is_empty() {
 
-        flog(&format!("[FILES] {}: {} files missing at launch", title, removed.len()));
+        flog(&format!("[LAUNCH] {}: {} files missing, refusing to launch", title, missing.len()));
+
+        return Err(String::from(crate::user_error::GAME_FILES_MISSING));
 
     }
 

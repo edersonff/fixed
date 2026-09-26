@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -6,7 +6,13 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { listen } from "@tauri-apps/api/event";
 
+import type { FixProgressPayload } from "../types";
+
+import type { GameFilesStatus } from "../types";
+
 import type { LaunchProgressPayload } from "../types";
+
+import type { ProgressPayload } from "../types";
 
 const PHASE_LABELS: Record<string, string> = {
 
@@ -32,9 +38,11 @@ const PHASE_LABELS: Record<string, string> = {
 
 const IDLE_PHASE = "idle";
 
-const RESOLVED_PHASES = new Set(["idle", "running", "done", "exited", "failed"]);
+const RESOLVED_LAUNCH_PHASES = new Set(["idle", "running", "done", "exited", "failed"]);
 
-function phaseMessage(phase: string, detail: string): string {
+const PROTECTION_MESSAGE = "Windows keeps deleting this game's files. Turn protection off, then press Fix.";
+
+function launchPhaseMessage(phase: string, detail: string): string {
 
   if (phase === "failed") {
 
@@ -48,27 +56,95 @@ function phaseMessage(phase: string, detail: string): string {
 
 }
 
+function fixLabel(fixPhase: string, downloadPercent: number | null): string {
+
+  if (downloadPercent !== null) {
+
+    return `Downloading ${downloadPercent}%`;
+
+  }
+
+  if (fixPhase === "extracting") {
+
+    return "Extracting…";
+
+  }
+
+  if (fixPhase === "checking") {
+
+    return "Checking…";
+
+  }
+
+  return "Fixing…";
+
+}
+
+// One button, one flow: intact files show Play, missing files show Fix, and the same press()
+// decides which action fires — never two buttons offering the player a choice mid-problem.
 export function useGameLaunch(gameTitle: string) {
 
   const [phase, setPhase] = useState(IDLE_PHASE);
 
   const [launchMsg, setLaunchMsg] = useState("");
 
+  const [missing, setMissing] = useState<string[]>([]);
+
+  const [fixing, setFixing] = useState(false);
+
+  const [fixPhase, setFixPhase] = useState("");
+
+  const [downloadPercent, setDownloadPercent] = useState<number | null>(null);
+
+  const [removedAgain, setRemovedAgain] = useState(false);
+
+  const fixingRef = useRef(false);
+
+  fixingRef.current = fixing;
+
+  const refreshStatus = useCallback(() => {
+
+    invoke<GameFilesStatus>("game_files_status", { title: gameTitle })
+      .then((status) => setMissing(status.missing))
+      .catch(() => undefined);
+
+  }, [gameTitle]);
+
+  useEffect(() => {
+
+    refreshStatus();
+
+  }, [refreshStatus]);
+
+  useEffect(() => {
+
+    function onFocus() {
+
+      refreshStatus();
+
+      setRemovedAgain(false);
+
+    }
+
+    window.addEventListener("focus", onFocus);
+
+    return () => window.removeEventListener("focus", onFocus);
+
+  }, [refreshStatus]);
+
   useEffect(() => {
 
     const unlisten = listen<LaunchProgressPayload>("launch-progress", (event) => {
 
-      const progress = event.payload;
-
-      if (progress.title !== gameTitle) {
+      if (event.payload.title !== gameTitle) {
 
         return;
 
       }
 
-      setPhase(progress.phase);
+      setPhase(event.payload.phase);
 
-      setLaunchMsg(phaseMessage(progress.phase, progress.detail));
+      setLaunchMsg(launchPhaseMessage(event.payload.phase, event.payload.detail));
 
     });
 
@@ -80,7 +156,71 @@ export function useGameLaunch(gameTitle: string) {
 
   }, [gameTitle]);
 
-  function launch() {
+  useEffect(() => {
+
+    const unlisten = listen<FixProgressPayload>("fix-progress", (event) => {
+
+      if (event.payload.title !== gameTitle) {
+
+        return;
+
+      }
+
+      setFixPhase(event.payload.phase);
+
+      if (event.payload.phase === "removed-again") {
+
+        setRemovedAgain(true);
+
+      }
+
+    });
+
+    return () => {
+
+      unlisten.then((stop) => stop());
+
+    };
+
+  }, [gameTitle]);
+
+  useEffect(() => {
+
+    const unlisten = listen<ProgressPayload>("download-progress", (event) => {
+
+      if (event.payload.title !== gameTitle || !fixingRef.current) {
+
+        return;
+
+      }
+
+      if (event.payload.state === "downloading" && event.payload.totalBytes > 0) {
+
+        setDownloadPercent(Math.round((event.payload.downloadedBytes / event.payload.totalBytes) * 100));
+
+        return;
+
+      }
+
+      if (event.payload.state === "extracting") {
+
+        setDownloadPercent(null);
+
+        setFixPhase("extracting");
+
+      }
+
+    });
+
+    return () => {
+
+      unlisten.then((stop) => stop());
+
+    };
+
+  }, [gameTitle]);
+
+  function play() {
 
     setPhase("checking");
 
@@ -108,8 +248,78 @@ export function useGameLaunch(gameTitle: string) {
 
   }
 
-  const launching = !RESOLVED_PHASES.has(phase);
+  function fix() {
 
-  return { launching, launchMsg, phase, launch };
+    setFixing(true);
+
+    setRemovedAgain(false);
+
+    setFixPhase("checking");
+
+    setDownloadPercent(null);
+
+    invoke<string>("fix_game", { title: gameTitle })
+
+      .then(() => {
+
+        refreshStatus();
+
+      })
+
+      .catch((reason: unknown) => {
+
+        const message = String(reason);
+
+        if (message === PROTECTION_MESSAGE) {
+
+          setRemovedAgain(true);
+
+          return;
+
+        }
+
+        setLaunchMsg(`Fix Failed: ${message}`);
+
+      })
+
+      .finally(() => {
+
+        setFixing(false);
+
+        setFixPhase("");
+
+        setDownloadPercent(null);
+
+      });
+
+  }
+
+  const needsFix = missing.length > 0;
+
+  const launching = !RESOLVED_LAUNCH_PHASES.has(phase);
+
+  function press() {
+
+    if (needsFix) {
+
+      if (!fixing && !removedAgain) {
+
+        fix();
+
+      }
+
+      return;
+
+    }
+
+    play();
+
+  }
+
+  const label = needsFix ? (fixing ? fixLabel(fixPhase, downloadPercent) : "Fix") : phase === "running" ? "Running" : launching ? "Starting" : "Play";
+
+  const busy = launching || fixing || phase === "running";
+
+  return { label, press, busy, needsFix, removedAgain, launchMsg };
 
 }
