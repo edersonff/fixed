@@ -70,6 +70,7 @@ fn poll_until_some_returns_the_value_once_the_check_finds_it() {
 
 }
 
+#[cfg(not(windows))]
 #[test]
 #[ignore = "needs python3, ss and outbound https reach (live network)"]
 fn connection_signal_detects_browser_named_established_socket() {
