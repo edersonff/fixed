@@ -249,11 +249,11 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .library-head-actions { display: flex; align-items: center; gap: 12px; }
 .library-count { color: var(--muted); font-size: var(--size-meta); font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
 .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
-.lib-card { position: relative; display: flex; aspect-ratio: 2 / 3; min-width: 0; overflow: hidden; flex-direction: column; justify-content: flex-end; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); transition: border-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
+.lib-card { position: relative; display: flex; aspect-ratio: 2 / 3; min-width: 0; overflow: visible; flex-direction: column; justify-content: flex-end; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); transition: border-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
 .lib-card:hover { border-color: rgba(213, 225, 237, .24); box-shadow: 0 8px 20px rgba(0, 0, 0, .2); transform: translateY(-2px); }
-.lib-art { position: absolute; z-index: 0; inset: 0; overflow: hidden; width: 100%; height: 100%; opacity: .78; transition: opacity var(--dur-short) var(--ease-standard), transform var(--dur-short) var(--ease-standard); }
+.lib-art { position: absolute; z-index: 0; inset: 0; overflow: hidden; width: 100%; height: 100%; border-radius: 13px; opacity: .78; transition: opacity var(--dur-short) var(--ease-standard), transform var(--dur-short) var(--ease-standard); }
 .lib-card:hover .lib-art { opacity: .92; transform: scale(1.04); }
-.lib-card::after { position: absolute; z-index: 1; background: linear-gradient(180deg, rgba(12, 16, 21, .08) 0%, rgba(12, 16, 21, .84) 60%, rgba(12, 16, 21, .97) 100%); content: ""; inset: 0; pointer-events: none; }
+.lib-card::after { position: absolute; z-index: 1; background: linear-gradient(180deg, rgba(12, 16, 21, .08) 0%, rgba(12, 16, 21, .84) 60%, rgba(12, 16, 21, .97) 100%); content: ""; inset: 0; border-radius: 13px; pointer-events: none; }
 .lib-body { position: relative; z-index: 2; padding: 16px; }
 .lib-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .lib-label { color: var(--lime); font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }

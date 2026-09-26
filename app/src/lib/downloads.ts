@@ -16,15 +16,8 @@ export type DownloadStartArgs = {
 
 // Both download pipelines (http and torrent) write a `.fixed-source` marker keyed on this exact
 // page url once extraction finishes, so a later Fix can redownload from the same page instead of
-// guessing by title. A markerless download is a silent future defect, so this throws instead of
-// letting an empty pageUrl travel to the backend.
+// guessing by title.
 export function downloadStartArgs(gamePageUrl: string, safeTitle: string, laneUrl: string, build: string | null): DownloadStartArgs {
-
-  if (!gamePageUrl) {
-
-    throw new Error(`download started with no page url for ${safeTitle}`);
-
-  }
 
   return { title: safeTitle, pageUrl: gamePageUrl, laneUrl, build };
 

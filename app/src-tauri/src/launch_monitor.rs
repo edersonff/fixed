@@ -10,6 +10,8 @@ const GAME_PID_TIMEOUT: Duration = Duration::from_secs(30);
 const FAST_POLL: Duration = Duration::from_millis(500);
 const RUNNING_POLL: Duration = Duration::from_secs(5);
 const QUICK_EXIT_THRESHOLD: Duration = Duration::from_secs(5);
+const FILES_WATCH_STEP: Duration = Duration::from_secs(1);
+const FILES_WATCH_CHECKS: u32 = 15;
 
 fn active_titles() -> &'static Mutex<HashSet<String>> {
 
@@ -111,7 +113,7 @@ pub(crate) fn exe_basename(exe: &str) -> String {
 // launch in two stages Steam can each drop silently — reaper never appearing, or reaper appearing
 // but the game exe never starting under it (Proton/runtime failure) — before handing the process
 // to a background watcher that reports `exited` whenever it later goes away.
-pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32, exe: &str) -> Result<u32, String> {
+pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32, exe: &str, folder: &str) -> Result<u32, String> {
 
     let guard = TitleGuard::acquire(title).ok_or_else(|| format!("{} is already being launched", title))?;
 
@@ -148,6 +150,8 @@ pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32,
     #[cfg(not(windows))]
     watch_fix_activation(title.to_string());
 
+    watch_launched_files(app.clone(), title.to_string(), folder.to_string(), pid);
+
     let watch_app = app.clone();
 
     let watch_title = title.to_string();
@@ -155,6 +159,50 @@ pub(crate) fn confirm_and_track(app: &tauri::AppHandle, title: &str, appid: u32,
     std::thread::spawn(move || watch_exit(&watch_app, &watch_title, pid, guard));
 
     Ok(pid)
+
+}
+
+// The pre-launch check already refused to fire if files were missing, so anything missing now is
+// real-time protection reacting to the game loading a fix DLL (measured 2026-09-26: winmm.dll
+// removed 1s after the game read it). Runs off the async runtime and never delays the launch
+// result — a "done" is already on its way to the frontend by the time this thread starts.
+fn watch_launched_files(app: tauri::AppHandle, title: String, folder: String, pid: u32) {
+
+    std::thread::spawn(move || {
+
+        let folder_path = std::path::Path::new(&folder);
+
+        let missing_before = crate::game_files::missing_files(folder_path);
+
+        for _ in 0..FILES_WATCH_CHECKS {
+
+            std::thread::sleep(FILES_WATCH_STEP);
+
+            if !crate::game_process::pid_alive(pid) {
+
+                return;
+
+            }
+
+            let missing_after = crate::game_files::missing_files(folder_path);
+
+            if crate::game_files::should_close_for_vanished_files(&missing_before, &missing_after) {
+
+                flog(&format!("[FILES] {}: fix files removed while the game started, game closed", title));
+
+                crate::game_process::kill(pid);
+
+                crate::launch_progress::emit_progress(&app, &title, "exited", "fix files removed");
+
+                crate::launch_progress::emit_named(&app, "fix-progress", &title, "removed-again", "");
+
+                return;
+
+            }
+
+        }
+
+    });
 
 }
 

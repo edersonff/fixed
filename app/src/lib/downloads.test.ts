@@ -21,31 +21,3 @@ assertEqual(args.title, "BOMBANANA_", "title is the safe title, unchanged");
 assertEqual(args.laneUrl, "https://mirror.example/x", "laneUrl passes through untouched");
 
 assertEqual(args.build, "1.0", "build passes through untouched");
-
-let threwOnEmptyPageUrl = false;
-
-try {
-
-  downloadStartArgs("", "BOMBANANA_", "https://mirror.example/x", null);
-
-} catch {
-
-  threwOnEmptyPageUrl = true;
-
-}
-
-assertEqual(threwOnEmptyPageUrl, true, "an empty page url throws instead of starting a download with no .fixed-source marker");
-
-let threwOnUndefinedPageUrl = false;
-
-try {
-
-  downloadStartArgs(undefined as unknown as string, "BOMBANANA_", "https://mirror.example/x", null);
-
-} catch {
-
-  threwOnUndefinedPageUrl = true;
-
-}
-
-assertEqual(threwOnUndefinedPageUrl, true, "an undefined page url throws the same way an empty one does");

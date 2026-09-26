@@ -114,3 +114,30 @@ fn files_removed_again_is_false_when_the_restored_files_stay() {
     assert!(!files_removed_again(&restored, &[]));
 
 }
+
+#[test]
+fn should_close_for_vanished_files_keeps_the_game_when_nothing_new_is_missing() {
+
+    assert!(!should_close_for_vanished_files(&[], &[]));
+
+}
+
+#[test]
+fn should_close_for_vanished_files_closes_when_a_file_vanishes_after_launch() {
+
+    let missing_after = vec![String::from("Game/winmm.dll")];
+
+    assert!(should_close_for_vanished_files(&[], &missing_after));
+
+}
+
+#[test]
+fn should_close_for_vanished_files_ignores_a_file_that_was_already_missing_before() {
+
+    let missing_before = vec![String::from("Game/OnlineFix.ini")];
+
+    let missing_after = vec![String::from("Game/OnlineFix.ini")];
+
+    assert!(!should_close_for_vanished_files(&missing_before, &missing_after));
+
+}

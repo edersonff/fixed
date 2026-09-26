@@ -21,7 +21,7 @@ pub(crate) fn steam_paths() -> Result<(String, std::path::PathBuf), String> {
 // CEF flow: Steam's own client API assigns the appid (Steam-emitted ids are the only ones that
 // launch — measured 2026-09-19: FNV and CRC32 ids both die with AppError_9) and RunGame hands the
 // game a real session. Same mechanism as Heroic/NonSteamLaunchers/Decky (steamwebhelper CDP).
-async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Result<String, String> {
+async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str, folder: &str) -> Result<String, String> {
 
     crate::steam_ipc::ensure_cef_flag()?;
 
@@ -247,9 +247,11 @@ async fn cef_launch_flow(app: &tauri::AppHandle, title: &str, exe: &str) -> Resu
 
     let confirm_exe = exe.to_string();
 
+    let confirm_folder = folder.to_string();
+
     let pid = tokio::task::spawn_blocking(move || {
 
-        crate::launch_monitor::confirm_and_track(&confirm_app, &confirm_title, appid, &confirm_exe)
+        crate::launch_monitor::confirm_and_track(&confirm_app, &confirm_title, appid, &confirm_exe, &confirm_folder)
 
     })
         .await
@@ -377,9 +379,11 @@ async fn legacy_flow(app: &tauri::AppHandle, title: &str, folder: &str) -> Resul
 
     let confirm_exe = exe.to_string();
 
+    let confirm_folder = folder.to_string();
+
     let pid = tokio::task::spawn_blocking(move || {
 
-        crate::launch_monitor::confirm_and_track(&confirm_app, &confirm_title, appid, &confirm_exe)
+        crate::launch_monitor::confirm_and_track(&confirm_app, &confirm_title, appid, &confirm_exe, &confirm_folder)
 
     })
 
@@ -437,7 +441,7 @@ async fn run_launch(app: &tauri::AppHandle, title: &str) -> Result<String, Strin
 
     }
 
-    match cef_launch_flow(app, title, &exe).await {
+    match cef_launch_flow(app, title, &exe, &folder).await {
 
         Ok(result) => Ok(result),
 

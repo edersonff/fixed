@@ -137,6 +137,24 @@ pub fn pid_alive(pid: u32) -> bool {
 
 }
 
+#[cfg(windows)]
+pub fn kill(pid: u32) {
+
+    let pid_string = pid.to_string();
+
+    let _ = crate::quiet_command::quiet_command("taskkill").args(["/PID", &pid_string, "/F"]).status();
+
+}
+
+#[cfg(not(windows))]
+pub fn kill(pid: u32) {
+
+    let pid_string = pid.to_string();
+
+    let _ = crate::quiet_command::quiet_command("kill").args([&pid_string]).status();
+
+}
+
 #[cfg(test)]
 #[path = "game_process_tests.rs"]
 mod game_process_tests;

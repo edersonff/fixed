@@ -70,19 +70,7 @@ export function useDownloadStart({
 
     const safeTitle = game.title.replace(/\//g, "_");
 
-    let args;
-
-    try {
-
-      args = downloadStartArgs(game.pageUrl, safeTitle, torrentLane.url, gameDetail?.build || null);
-
-    } catch (reason: unknown) {
-
-      console.error("start_torrent_download rejected:", reason);
-
-      return;
-
-    }
+    const args = downloadStartArgs(game.pageUrl, safeTitle, torrentLane.url, gameDetail?.build || null);
 
     setDownloads((previous) => [
 
@@ -132,19 +120,7 @@ export function useDownloadStart({
 
     const safeTitle = game.title.replace(/\//g, "_");
 
-    let args;
-
-    try {
-
-      args = downloadStartArgs(game.pageUrl, safeTitle, hostersUrl, build ?? null);
-
-    } catch (reason: unknown) {
-
-      console.error("start_http_download rejected:", reason);
-
-      return;
-
-    }
+    const args = downloadStartArgs(game.pageUrl, safeTitle, hostersUrl, build ?? null);
 
     setDownloads((previous) => [
 

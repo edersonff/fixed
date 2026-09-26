@@ -155,6 +155,16 @@ pub(crate) fn files_removed_again(restored: &[String], missing_now: &[String]) -
 
 }
 
+// Pure: given the files missing right before a launch (Play already refused to fire if this was
+// non-empty, so it is always empty in production) and what is missing a moment after the game
+// started, true means real-time protection took a fix file while the game was already running —
+// the caller closes the game instead of leaving it alive with a broken fix.
+pub(crate) fn should_close_for_vanished_files(missing_before: &[String], missing_after: &[String]) -> bool {
+
+    missing_after.iter().any(|entry| !missing_before.contains(entry))
+
+}
+
 // Shared by the interactive restore (which then watches for real-time protection removing the
 // files again) and the silent pre-launch restore (which never watches: Play cannot afford 20s).
 fn extract_missing(folder: &Path, missing_before: &[String]) -> Result<Vec<String>, String> {
