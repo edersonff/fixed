@@ -6,8 +6,11 @@ use crate::flog;
 
 const MANIFEST: &str = ".fixed-files";
 
-// Measured 2026-09-26 in the Windows lab: the security app removed OnlineFix64.dll and winmm.dll
-// within one second of unrar writing them, so a short settle catches the removal before the archive goes.
+// Measured 2026-09-26 in the Windows lab: detection logged 11s after extraction began and the files
+// were still on disk 8s after that, so no short wait is safe; the archive goes only a minute after a
+// confirmed launch.
+const RELEASE_DELAY: std::time::Duration = std::time::Duration::from_secs(60);
+
 const SETTLE_CHECKS: u32 = 4;
 
 const SETTLE_STEP: std::time::Duration = std::time::Duration::from_secs(2);
@@ -125,7 +128,15 @@ fn after_extract(title: &str, folder: &str) {
 
     }
 
-    let missing = settle_and_check(folder_path);
+    if cfg!(windows) {
+
+        flog(&format!("[FILES] {}: archive kept until the first confirmed launch", title));
+
+        return;
+
+    }
+
+    let missing = missing_files(folder_path);
 
     if archive_decision(&missing) == ArchiveDecision::Delete {
 
@@ -150,6 +161,8 @@ pub fn extract_and_verify(title: &str, folder: &str) -> Result<u32, String> {
 }
 
 pub fn release_archive_if_intact(title: &str, folder: &str) {
+
+    std::thread::sleep(RELEASE_DELAY);
 
     let missing = settle_and_check(Path::new(folder));
 
