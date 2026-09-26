@@ -108,6 +108,7 @@
         <a class="btn primary" id="dl-btn" href="https://github.com/edersonff/fixed/releases/latest/download/fixed-windows-x86_64-setup.exe">Download for Windows</a>
         <a class="btn ghost" href="https://github.com/edersonff/fixed/releases">Releases</a>
       </div>
+      <p class="sub" id="dl-ver"></p>
     </section>
 
     <figure class="shot"><img src="screenshots/home.webp" alt="FIXED home with catalog, hero banner and game rails" fetchpriority="high" decoding="async"><figcaption>Home · live catalog with trending and recently added</figcaption></figure>
@@ -123,7 +124,7 @@
       <p>Every step automated. You click Download once.</p>
       <div class="steps">
         <div class="step"><p><b>Download</b> · HTTP mirror lane by default with live progress, torrent opt-in for when you want it</p></div>
-        <div class="step"><p><b>Extract</b> · password handled automatically, installers cleaned up after</p></div>
+        <div class="step"><p><b>Extract</b> · password handled automatically, archive kept so missing files can be restored</p></div>
         <div class="step"><p><b>Steam</b> · non-Steam shortcut with Proton launch options, idempotent</p></div>
         <div class="step"><p><b>Play</b> · one click launches the game through Steam</p></div>
         <div class="step"><p><b>Plugins</b> · drop a BepInEx zip, Fix Repair reapplied on top automatically</p></div>
@@ -149,7 +150,6 @@
   </div>
 
   <script>
-    // OS sniff only, zero network: instant correct button, stable URLs that never rot.
     (function () {
       var btn = document.getElementById('dl-btn');
       if (!btn) return;
@@ -162,6 +162,18 @@
       if (ua.includes('Windows')) return; // default markup is already the Windows direct download
       btn.textContent = 'Download for Linux';
       btn.href = 'https://github.com/edersonff/fixed/releases/latest/download/fixed-linux-x86_64.AppImage';
+    })();
+
+    (function () {
+      var line = document.getElementById('dl-ver');
+      if (!line) return;
+      fetch('https://api.github.com/repos/edersonff/fixed/releases/latest')
+        .then(function (response) { return response.json(); })
+        .then(function (release) {
+          var day = new Date(release.published_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          line.textContent = 'Latest: ' + release.tag_name + ' · released ' + day;
+        })
+        .catch(function () { line.textContent = ''; });
     })();
   </script>
 </body>
