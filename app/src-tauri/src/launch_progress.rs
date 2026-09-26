@@ -3,7 +3,16 @@ use tauri::Emitter;
 
 pub(crate) fn emit_progress(app: &tauri::AppHandle, title: &str, phase: &str, detail: &str) {
 
-    let _ = app.emit("launch-progress", LaunchProgress {
+    emit_named(app, "launch-progress", title, phase, detail);
+
+}
+
+// Shared by launch progress and fix progress: both are the same {title, phase, detail} shape
+// broadcast under a different event name, so one emitter carries both instead of two copies of
+// the same struct-and-emit body.
+pub(crate) fn emit_named(app: &tauri::AppHandle, event: &str, title: &str, phase: &str, detail: &str) {
+
+    let _ = app.emit(event, LaunchProgress {
 
         title: title.to_string(),
 

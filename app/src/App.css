@@ -11,6 +11,8 @@
   --lime: #c6ff4a;
   --lime-soft: #d8ff85;
   --danger: #ff7a7a;
+  --amber: #ffb648;
+  --amber-soft: #ffca7a;
   --size-body: 14px;
   --size-meta: 11px;
   --dur-micro: 100ms;
@@ -218,6 +220,9 @@ button.lane-row { cursor: pointer; font: inherit; color: inherit; }
 .play, .ghost { display: inline-flex; align-items: center; gap: 7px; height: var(--button-action-height); padding: 0 16px; border-radius: var(--button-radius); font-weight: 800; transition: opacity var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
 .play { min-height: 48px; height: 48px; background: var(--lime); color: #10130c; }
 .play:hover { background: var(--lime-soft); }
+
+.play.fix, .hero-cta.fix, .quick-dl.fix { background: var(--amber); color: #241503; }
+.play.fix:hover, .hero-cta.fix:hover, .quick-dl.fix:hover { background: var(--amber-soft); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; }
 
 .press-lift { transition: transform var(--dur-micro) var(--ease-standard); }

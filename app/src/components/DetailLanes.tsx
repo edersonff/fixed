@@ -92,7 +92,7 @@ export function DetailLanes({
 
           type="button"
 
-          className="hero-cta"
+          className={installed && needsFix ? "hero-cta fix" : "hero-cta"}
 
           onClick={installed ? onPlay : onDownload}
 

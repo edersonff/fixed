@@ -6,6 +6,8 @@ import { Download, Play, Wrench } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
 
+import { FixBlockedNote } from "./FixBlockedNote";
+
 import { useGameAssets } from "../hooks/useGameAssets";
 
 import { useGameLaunch } from "../hooks/useGameLaunch";
@@ -60,7 +62,7 @@ export function HomeHero({
 
   const installed = useIsGameInstalled(featured?.title ?? "");
 
-  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(featured?.title ?? "");
+  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(featured?.title ?? "", installed);
 
   useEffect(() => {
 
@@ -158,7 +160,7 @@ export function HomeHero({
 
           type="button"
 
-          className="hero-cta"
+          className={installed && needsFix ? "hero-cta fix" : "hero-cta"}
 
           variants={heroVariants}
 
@@ -187,6 +189,8 @@ export function HomeHero({
           {installed ? label : "Download"}
 
         </motion.button>
+
+        {installed && removedAgain && <FixBlockedNote />}
 
       </div>
 

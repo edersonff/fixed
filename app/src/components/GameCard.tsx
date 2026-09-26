@@ -6,6 +6,8 @@ import { Download, Play, Wrench } from "lucide-react";
 
 import { ArtImage } from "./ArtImage";
 
+import { FixBlockedNote } from "./FixBlockedNote";
+
 import { useGameAssets } from "../hooks/useGameAssets";
 
 import { useGameLaunch } from "../hooks/useGameLaunch";
@@ -61,7 +63,7 @@ function GameCardBase({
 
   const installed = useIsGameInstalled(game.title);
 
-  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(game.title);
+  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(game.title, installed);
 
   return (
 
@@ -137,7 +139,7 @@ function GameCardBase({
 
             type="button"
 
-            className="quick-dl action-button press-action"
+            className={installed && needsFix ? "quick-dl action-button press-action fix" : "quick-dl action-button press-action"}
 
             disabled={installed ? busy || removedAgain : quickBusy}
 
@@ -172,6 +174,8 @@ function GameCardBase({
         </div>
 
       </div>
+
+      {installed && removedAgain && <FixBlockedNote />}
 
       <div className="copy">
 

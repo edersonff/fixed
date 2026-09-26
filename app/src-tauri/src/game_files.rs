@@ -16,7 +16,6 @@ const WATCH_CHECKS: u32 = 10;
 #[serde(rename_all = "camelCase")]
 pub struct GameFilesStatus {
     pub missing: Vec<String>,
-    pub can_restore: bool,
 }
 
 #[derive(serde::Serialize, Clone, Debug, PartialEq)]
@@ -24,7 +23,6 @@ pub struct GameFilesStatus {
 pub struct RestoreOutcome {
     pub missing: Vec<String>,
     pub removed_again: bool,
-    pub can_restore: bool,
 }
 
 pub(crate) fn archive_in(folder: &Path) -> Option<PathBuf> {
@@ -144,7 +142,6 @@ pub fn status(folder: &Path) -> GameFilesStatus {
 
     GameFilesStatus {
         missing: missing_files(folder),
-        can_restore: archive_in(folder).is_some(),
     }
 
 }
@@ -188,7 +185,7 @@ pub fn restore(title: &str, folder: &Path) -> Result<RestoreOutcome, String> {
 
         flog(&format!("[FILES] {}: no archive kept, restore not possible", title));
 
-        return Ok(RestoreOutcome { missing: missing_before, removed_again: false, can_restore: false });
+        return Ok(RestoreOutcome { missing: missing_before, removed_again: false });
 
     }
 
@@ -218,7 +215,7 @@ pub fn restore(title: &str, folder: &Path) -> Result<RestoreOutcome, String> {
 
     }
 
-    Ok(RestoreOutcome { missing: missing_files(folder), removed_again, can_restore: archive_in(folder).is_some() })
+    Ok(RestoreOutcome { missing: missing_files(folder), removed_again })
 
 }
 

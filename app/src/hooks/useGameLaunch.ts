@@ -6,6 +6,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { listen } from "@tauri-apps/api/event";
 
+import { useTitleEvent } from "./useTitleEvent";
+
+import { FILES_REMOVED_AGAIN, fixErrorMessage } from "../lib/fixErrors";
+
+import { deriveFixState, fixLabelFor, fixPressEnabled } from "../lib/fixState";
+
 import type { FixProgressPayload } from "../types";
 
 import type { GameFilesStatus } from "../types";
@@ -39,8 +45,6 @@ const PHASE_LABELS: Record<string, string> = {
 const IDLE_PHASE = "idle";
 
 const RESOLVED_LAUNCH_PHASES = new Set(["idle", "running", "done", "exited", "failed"]);
-
-const PROTECTION_MESSAGE = "Windows keeps deleting this game's files. Turn protection off, then press Fix.";
 
 function launchPhaseMessage(phase: string, detail: string): string {
 
@@ -82,7 +86,7 @@ function fixLabel(fixPhase: string, downloadPercent: number | null): string {
 
 // One button, one flow: intact files show Play, missing files show Fix, and the same press()
 // decides which action fires — never two buttons offering the player a choice mid-problem.
-export function useGameLaunch(gameTitle: string) {
+export function useGameLaunch(gameTitle: string, installed: boolean) {
 
   const [phase, setPhase] = useState(IDLE_PHASE);
 
@@ -104,11 +108,17 @@ export function useGameLaunch(gameTitle: string) {
 
   const refreshStatus = useCallback(() => {
 
+    if (!installed) {
+
+      return;
+
+    }
+
     invoke<GameFilesStatus>("game_files_status", { title: gameTitle })
       .then((status) => setMissing(status.missing))
       .catch(() => undefined);
 
-  }, [gameTitle]);
+  }, [gameTitle, installed]);
 
   useEffect(() => {
 
@@ -117,6 +127,12 @@ export function useGameLaunch(gameTitle: string) {
   }, [refreshStatus]);
 
   useEffect(() => {
+
+    if (!installed) {
+
+      return;
+
+    }
 
     function onFocus() {
 
@@ -130,59 +146,31 @@ export function useGameLaunch(gameTitle: string) {
 
     return () => window.removeEventListener("focus", onFocus);
 
-  }, [refreshStatus]);
+  }, [refreshStatus, installed]);
 
-  useEffect(() => {
+  const onLaunchProgress = useCallback((payload: LaunchProgressPayload) => {
 
-    const unlisten = listen<LaunchProgressPayload>("launch-progress", (event) => {
+    setPhase(payload.phase);
 
-      if (event.payload.title !== gameTitle) {
+    setLaunchMsg(launchPhaseMessage(payload.phase, payload.detail));
 
-        return;
+  }, []);
 
-      }
+  useTitleEvent<LaunchProgressPayload>("launch-progress", gameTitle, onLaunchProgress);
 
-      setPhase(event.payload.phase);
+  const onFixProgress = useCallback((payload: FixProgressPayload) => {
 
-      setLaunchMsg(launchPhaseMessage(event.payload.phase, event.payload.detail));
+    setFixPhase(payload.phase);
 
-    });
+    if (payload.phase === "removed-again") {
 
-    return () => {
+      setRemovedAgain(true);
 
-      unlisten.then((stop) => stop());
+    }
 
-    };
+  }, []);
 
-  }, [gameTitle]);
-
-  useEffect(() => {
-
-    const unlisten = listen<FixProgressPayload>("fix-progress", (event) => {
-
-      if (event.payload.title !== gameTitle) {
-
-        return;
-
-      }
-
-      setFixPhase(event.payload.phase);
-
-      if (event.payload.phase === "removed-again") {
-
-        setRemovedAgain(true);
-
-      }
-
-    });
-
-    return () => {
-
-      unlisten.then((stop) => stop());
-
-    };
-
-  }, [gameTitle]);
+  useTitleEvent<FixProgressPayload>("fix-progress", gameTitle, onFixProgress);
 
   useEffect(() => {
 
@@ -268,9 +256,9 @@ export function useGameLaunch(gameTitle: string) {
 
       .catch((reason: unknown) => {
 
-        const message = String(reason);
+        const code = String(reason);
 
-        if (message === PROTECTION_MESSAGE) {
+        if (code === FILES_REMOVED_AGAIN) {
 
           setRemovedAgain(true);
 
@@ -278,7 +266,7 @@ export function useGameLaunch(gameTitle: string) {
 
         }
 
-        setLaunchMsg(`Fix Failed: ${message}`);
+        setLaunchMsg(`Fix Failed: ${fixErrorMessage(code) ?? code}`);
 
       })
 
@@ -294,7 +282,9 @@ export function useGameLaunch(gameTitle: string) {
 
   }
 
-  const needsFix = missing.length > 0;
+  const fixState = deriveFixState(missing.length, removedAgain);
+
+  const needsFix = fixState !== "intact";
 
   const launching = !RESOLVED_LAUNCH_PHASES.has(phase);
 
@@ -302,7 +292,7 @@ export function useGameLaunch(gameTitle: string) {
 
     if (needsFix) {
 
-      if (!fixing && !removedAgain) {
+      if (!fixing && fixPressEnabled(fixState)) {
 
         fix();
 
@@ -316,7 +306,7 @@ export function useGameLaunch(gameTitle: string) {
 
   }
 
-  const label = needsFix ? (fixing ? fixLabel(fixPhase, downloadPercent) : "Fix") : phase === "running" ? "Running" : launching ? "Starting" : "Play";
+  const label = needsFix ? (fixing ? fixLabel(fixPhase, downloadPercent) : fixLabelFor(fixState)) : phase === "running" ? "Running" : launching ? "Starting" : fixLabelFor(fixState);
 
   const busy = launching || fixing || phase === "running";
 

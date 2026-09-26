@@ -12,7 +12,7 @@ use tauri::Emitter;
 use tauri::Manager;
 
 #[tauri::command]
-pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<'_, DownloadEngine>, title: String, lane_url: String, build: Option<String>) -> Result<String, String> {
+pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<'_, DownloadEngine>, title: String, page_url: String, lane_url: String, build: Option<String>) -> Result<String, String> {
 
     let torrent_url = fix_core::torrent_file_url(&lane_url)
 
@@ -180,6 +180,8 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
 
                 let extract_build = build.clone();
 
+                let extract_page_url = page_url.clone();
+
                 if let Some(engine_state) = app.try_state::<DownloadEngine>() {
 
                     if let Ok(mut active) = engine_state.torrents.lock() {
@@ -225,6 +227,14 @@ pub async fn start_torrent_download(app: tauri::AppHandle, engine: tauri::State<
                                     flog(&format!("[DL] {}: build marker write failed: {}", extract_title, error));
 
                                 }
+
+                            }
+
+                            let source_marker = std::path::Path::new(&extract_folder).join(".fixed-source");
+
+                            if let Err(error) = std::fs::write(&source_marker, &extract_page_url) {
+
+                                flog(&format!("[DL] {}: source marker write failed: {}", extract_title, error));
 
                             }
 

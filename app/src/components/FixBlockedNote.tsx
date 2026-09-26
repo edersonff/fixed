@@ -1,8 +1,8 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 
-const DEFENDER_SETTINGS_URL = "windowsdefender://threatsettings";
+import { FILES_REMOVED_AGAIN, fixErrorMessage } from "../lib/fixErrors";
 
-const PROTECTION_LINE = "Windows keeps deleting this game's files. Turn protection off, then press Fix.";
+const DEFENDER_SETTINGS_URL = "windowsdefender://threatsettings";
 
 export function FixBlockedNote() {
 
@@ -16,7 +16,7 @@ export function FixBlockedNote() {
 
       </button>
 
-      <p className="fix-blocked-line">{PROTECTION_LINE}</p>
+      <p className="fix-blocked-line">{fixErrorMessage(FILES_REMOVED_AGAIN)}</p>
 
     </div>
 

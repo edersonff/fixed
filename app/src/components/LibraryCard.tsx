@@ -60,7 +60,7 @@ export function LibraryCard({
 
   const [logoFailed, setLogoFailed] = useState(false);
 
-  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(game.title);
+  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(game.title, true);
 
   const { pluginMsg, addPlugin } = usePluginInstall(game.title);
 

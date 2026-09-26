@@ -12,9 +12,12 @@ pub const GAME_EXE_MISSING: &str = "The game files are incomplete (no game .exe 
 
 pub const GAME_FILES_MISSING: &str = "This game's files are incomplete. Press Fix instead of Play.";
 
-// Exact match with the frontend's Fix flow (hooks/useGameLaunch.ts): wording changes here must
-// move together with that comparison.
-pub const FIX_FILES_REMOVED_AGAIN: &str = "Windows keeps deleting this game's files. Turn protection off, then press Fix.";
+// A code, never a sentence: the frontend's app/src/lib/fixErrors.ts is the one place that maps
+// this to words, shared by useGameLaunch and FixBlockedNote.
+pub const FIX_FILES_REMOVED_AGAIN: &str = "files-removed-again";
+
+// A code, never a sentence: see FIX_FILES_REMOVED_AGAIN.
+pub const GAME_PAGE_NEEDED: &str = "game-page-needed";
 
 const USER_FACING: [&str; 5] = [STEAM_NOT_INSTALLED, STEAM_NEVER_LOGGED_IN, STEAM_DID_NOT_START, GAME_EXE_MISSING, GAME_FILES_MISSING];
 

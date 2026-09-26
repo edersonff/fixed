@@ -12,7 +12,7 @@ import { EASE_POP, DUR_SHORT, actionHover, actionPressDown } from '../lib/motion
 
 export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; ready: boolean }) {
 
-  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(gameTitle);
+  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(gameTitle, ready);
 
   const { pluginMsg, addPlugin } = usePluginInstall(gameTitle);
 
@@ -42,7 +42,7 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
               type="button"
 
-              className="play"
+              className={needsFix ? "play fix" : "play"}
 
               initial={{ opacity: 0, scale: 0.9 }}
 

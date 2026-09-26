@@ -8,16 +8,16 @@ use tauri::Manager;
 
 #[tauri::command]
 
-pub async fn start_http_download(app: tauri::AppHandle, title: String, lane_url: String, build: Option<String>) -> Result<String, String> {
+pub async fn start_http_download(app: tauri::AppHandle, title: String, page_url: String, lane_url: String, build: Option<String>) -> Result<String, String> {
 
-    run_http_download(app, title, lane_url, build).await
+    run_http_download(app, title, page_url, lane_url, build).await
 
 }
 
 // Shared by the Download button (a hosters lane the person picked) and the Fix flow (a hosters
 // lane resolved automatically for a game whose archive is gone) — one pipeline, one set of
 // download-progress events, never two copies of the same extract-then-register-with-steam logic.
-pub(crate) async fn run_http_download(app: tauri::AppHandle, title: String, lane_url: String, build: Option<String>) -> Result<String, String> {
+pub(crate) async fn run_http_download(app: tauri::AppHandle, title: String, page_url: String, lane_url: String, build: Option<String>) -> Result<String, String> {
 
     let mirror_url = fix_core::mirror_download_url(&lane_url)
 
@@ -167,6 +167,8 @@ pub(crate) async fn run_http_download(app: tauri::AppHandle, title: String, lane
 
     let pipeline_build = build;
 
+    let pipeline_page_url = page_url;
+
     tauri::async_runtime::spawn(async move {
 
         let url = dl_url.clone();
@@ -256,6 +258,14 @@ pub(crate) async fn run_http_download(app: tauri::AppHandle, title: String, lane
                                 flog(&format!("[DL] {}: build marker write failed: {}", pipeline_title, error));
 
                             }
+
+                        }
+
+                        let source_marker = std::path::Path::new(&pipeline_folder).join(".fixed-source");
+
+                        if let Err(error) = std::fs::write(&source_marker, &pipeline_page_url) {
+
+                            flog(&format!("[DL] {}: source marker write failed: {}", pipeline_title, error));
 
                         }
 

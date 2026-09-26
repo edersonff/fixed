@@ -80,7 +80,7 @@ export function useDownloadStart({
 
     setView("downloads");
 
-    invoke<string>("start_torrent_download", { title: safeTitle, laneUrl: torrentLane.url, build: gameDetail?.build || null })
+    invoke<string>("start_torrent_download", { title: safeTitle, pageUrl: game.pageUrl, laneUrl: torrentLane.url, build: gameDetail?.build || null })
 
       .catch((reason: unknown) => {
 
@@ -128,7 +128,7 @@ export function useDownloadStart({
 
     setView("downloads");
 
-    invoke<string>("start_http_download", { title: safeTitle, laneUrl: hostersUrl, build: build ?? null })
+    invoke<string>("start_http_download", { title: safeTitle, pageUrl: game.pageUrl, laneUrl: hostersUrl, build: build ?? null })
 
       .catch((reason: unknown) => {
 

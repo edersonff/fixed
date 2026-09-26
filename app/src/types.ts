@@ -124,8 +124,6 @@ export type GameFilesStatus = {
 
   missing: string[];
 
-  canRestore: boolean;
-
 };
 
 export type FixProgressPayload = {
