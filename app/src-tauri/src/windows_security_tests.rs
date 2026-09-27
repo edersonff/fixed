@@ -10,7 +10,7 @@ fn build_args_carries_the_file_and_games_folder_flags() {
         vec![
             "-NoProfile",
             "-ExecutionPolicy",
-            "Bypass",
+            "RemoteSigned",
             "-File",
             "C:\\FIXED\\windows-security\\allow-games-folder.ps1",
             "-GamesFolder",
@@ -56,7 +56,7 @@ fn elevated_command_quotes_every_argument_and_waits_for_the_real_exit_code() {
 
     assert!(command.contains("-Verb RunAs"));
 
-    assert!(command.contains("-Wait -PassThru"));
+    assert!(command.contains("-Wait -PassThru -WindowStyle Hidden"));
 
     assert!(command.contains("exit $p.ExitCode"));
 
@@ -68,15 +68,6 @@ fn elevated_command_includes_remove_when_requested() {
     let command = elevated_command("script.ps1", "games", true);
 
     assert!(command.contains("'-Remove'"));
-
-}
-
-#[test]
-fn marker_is_written_only_when_the_elevated_run_succeeded() {
-
-    assert!(marker_should_be_written(true));
-
-    assert!(!marker_should_be_written(false));
 
 }
 

@@ -69,7 +69,24 @@ pub fn extract_first_rar(folder: &str) -> Result<u32, String> {
 
 }
 
+// On Windows the games folder must match what the installer excluded ($PROFILE = %USERPROFILE%),
+// so USERPROFILE wins there; a stray HOME from a shell like Git Bash would otherwise point the app
+// at a different folder than the one the installer allowed. Non-Windows keeps HOME first.
 pub fn home_dir() -> Option<String> {
+
+    if cfg!(windows) {
+
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+
+            if !profile.is_empty() {
+
+                return Some(profile);
+
+            }
+
+        }
+
+    }
 
     if let Ok(home) = std::env::var("HOME") {
 

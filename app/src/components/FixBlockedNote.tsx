@@ -4,9 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { FILES_REMOVED_AGAIN, fixErrorMessage } from "../lib/fixErrors";
 
+const DECLINED_LINE = "Windows did not allow the folder. Press the button again and choose Yes.";
+
 export function FixBlockedNote({ onAllowed }: { onAllowed: () => void }) {
 
   const [busy, setBusy] = useState(false);
+
+  const [declined, setDeclined] = useState(false);
 
   return (
 
@@ -26,6 +30,8 @@ export function FixBlockedNote({ onAllowed }: { onAllowed: () => void }) {
 
           setBusy(true);
 
+          setDeclined(false);
+
           invoke<boolean>("allow_games_folder")
             .then((allowed) => {
 
@@ -33,21 +39,25 @@ export function FixBlockedNote({ onAllowed }: { onAllowed: () => void }) {
 
                 onAllowed();
 
+              } else {
+
+                setDeclined(true);
+
               }
 
             })
-            .catch(() => undefined)
+            .catch(() => setDeclined(true))
             .finally(() => setBusy(false));
 
         }}
 
       >
 
-        Allow games folder
+        {busy ? "Allowing…" : "Allow games folder"}
 
       </button>
 
-      <p className="fix-blocked-line">{fixErrorMessage(FILES_REMOVED_AGAIN)}</p>
+      <p className="fix-blocked-line">{declined ? DECLINED_LINE : fixErrorMessage(FILES_REMOVED_AGAIN)}</p>
 
     </div>
 

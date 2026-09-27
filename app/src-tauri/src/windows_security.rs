@@ -30,12 +30,14 @@ fn ps_quote(value: &str) -> String {
 
 // Shared with the NSIS hook by convention only (NSIS cannot call Rust): this is the one place the
 // flag names are typed, and a test locks them so a rename here is caught before hooks.nsh drifts.
+// RemoteSigned (never Bypass) is the documented policy that already runs a local, installer-written
+// script — Bypass reads as tampering to a scanner and is not needed here.
 pub(crate) fn build_args(script: &str, games_folder: &str, remove: bool) -> Vec<String> {
 
     let mut args = vec![
         String::from("-NoProfile"),
         String::from("-ExecutionPolicy"),
-        String::from("Bypass"),
+        String::from("RemoteSigned"),
         String::from("-File"),
         script.to_string(),
         String::from("-GamesFolder"),
@@ -54,38 +56,16 @@ pub(crate) fn build_args(script: &str, games_folder: &str, remove: bool) -> Vec<
 
 // Start-Process -Verb RunAs is the standard Windows elevation prompt; -Wait -PassThru hands the
 // elevated process's own exit code back through $p.ExitCode, which becomes this outer
-// powershell.exe's exit code so Rust reads success from one place: Output::status.
+// powershell.exe's exit code so Rust reads success from one place: Output::status. WindowStyle
+// Hidden keeps a console from flashing after the user already consented at the UAC prompt.
 pub(crate) fn elevated_command(script: &str, games_folder: &str, remove: bool) -> String {
 
     let quoted: Vec<String> = build_args(script, games_folder, remove).iter().map(|arg| ps_quote(arg)).collect();
 
     format!(
-        "try {{ $p = Start-Process -FilePath 'powershell.exe' -ArgumentList {} -Verb RunAs -Wait -PassThru -ErrorAction Stop; exit $p.ExitCode }} catch {{ exit 1 }}",
+        "try {{ $p = Start-Process -FilePath 'powershell.exe' -ArgumentList {} -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop; exit $p.ExitCode }} catch {{ exit 1 }}",
         quoted.join(","),
     )
-
-}
-
-// The marker only ever moves from false to true here: removal is the installer's own job at
-// uninstall time, read and cleared with native NSIS registry instructions, never through Rust.
-pub(crate) fn marker_should_be_written(elevated_run_succeeded: bool) -> bool {
-
-    elevated_run_succeeded
-
-}
-
-// HKCU needs no elevation, so this runs from the same unelevated process that just watched the
-// elevated script exit 0 — no second privilege prompt for a value the user already approved.
-fn write_marker() {
-
-    if let Err(error) = crate::quiet_command::quiet_command("reg")
-        .args(["add", r"HKCU\Software\FIXED", "/v", "GamesFolderAllowed", "/t", "REG_DWORD", "/d", "1", "/f"])
-        .output()
-    {
-
-        flog(&format!("[SECURITY] marker write failed: {}", error));
-
-    }
 
 }
 
@@ -105,23 +85,17 @@ pub fn allow_games_folder() -> Result<bool, String> {
     let command = elevated_command(&script.to_string_lossy(), &games_folder.to_string_lossy(), false);
 
     let output = crate::quiet_command::quiet_command("powershell.exe")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &command])
+        .args(["-NoProfile", "-ExecutionPolicy", "RemoteSigned", "-Command", &command])
         .output()
         .map_err(|error| format!("spawn powershell: {}", error))?;
 
-    let succeeded = output.status.success();
+    if !output.status.success() {
 
-    if marker_should_be_written(succeeded) {
-
-        write_marker();
-
-    } else {
-
-        flog(&format!("[SECURITY] allow_games_folder elevated run failed: {:?}", output.status.code()));
+        flog(&format!("[SECURITY] allow_games_folder elevated run failed or was declined: {:?}", output.status.code()));
 
     }
 
-    Ok(succeeded)
+    Ok(output.status.success())
 
 }
 
