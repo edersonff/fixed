@@ -1,10 +1,12 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { useState } from "react";
+
+import { invoke } from "@tauri-apps/api/core";
 
 import { FILES_REMOVED_AGAIN, fixErrorMessage } from "../lib/fixErrors";
 
-const DEFENDER_SETTINGS_URL = "windowsdefender://threatsettings";
+export function FixBlockedNote({ onAllowed }: { onAllowed: () => void }) {
 
-export function FixBlockedNote() {
+  const [busy, setBusy] = useState(false);
 
   return (
 
@@ -16,17 +18,32 @@ export function FixBlockedNote() {
 
         className="ghost"
 
+        disabled={busy}
+
         onClick={(event: React.MouseEvent) => {
 
           event.stopPropagation();
 
-          openUrl(DEFENDER_SETTINGS_URL).catch(() => undefined);
+          setBusy(true);
+
+          invoke<boolean>("allow_games_folder")
+            .then((allowed) => {
+
+              if (allowed) {
+
+                onAllowed();
+
+              }
+
+            })
+            .catch(() => undefined)
+            .finally(() => setBusy(false));
 
         }}
 
       >
 
-        Turn off Windows protection
+        Allow games folder
 
       </button>
 

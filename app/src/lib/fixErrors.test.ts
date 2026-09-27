@@ -16,7 +16,7 @@ assertEqual(
 
   fixErrorMessage(FILES_REMOVED_AGAIN),
 
-  "Windows keeps deleting this game's files. Turn protection off, then press Fix.",
+  "Windows keeps removing this game's online files. Allow the games folder once and FIXED fixes it.",
 
   "files-removed-again maps to the protection sentence",
 

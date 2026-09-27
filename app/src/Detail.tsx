@@ -80,7 +80,7 @@ export function DetailView({
 
   const updateAvailable = installed && installedBuild !== null && siteBuild !== "" && siteBuild !== installedBuild;
 
-  const { label, press, busy: launchBusy, needsFix, removedAgain } = useGameLaunch(game.title, installed);
+  const { label, press, busy: launchBusy, needsFix, removedAgain, retryFix } = useGameLaunch(game.title, installed);
 
   useEffect(() => {
 
@@ -163,6 +163,8 @@ export function DetailView({
           removedAgain={removedAgain}
 
           onPlay={press}
+
+          onFixAllowed={retryFix}
 
         />
 

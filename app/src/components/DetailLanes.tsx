@@ -46,6 +46,8 @@ export function DetailLanes({
 
   onPlay,
 
+  onFixAllowed,
+
 }: {
 
   detail: GameDetail | null;
@@ -69,6 +71,8 @@ export function DetailLanes({
   removedAgain: boolean;
 
   onPlay: () => void;
+
+  onFixAllowed: () => void;
 
 }) {
 
@@ -116,7 +120,7 @@ export function DetailLanes({
 
       </div>
 
-      {installed && removedAgain && <FixBlockedNote />}
+      {installed && removedAgain && <FixBlockedNote onAllowed={onFixAllowed} />}
 
       {busy && (
 

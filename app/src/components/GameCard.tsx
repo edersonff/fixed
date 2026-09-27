@@ -63,7 +63,7 @@ function GameCardBase({
 
   const installed = useIsGameInstalled(game.title);
 
-  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(game.title, installed);
+  const { label, press, busy, needsFix, removedAgain, retryFix } = useGameLaunch(game.title, installed);
 
   return (
 
@@ -175,7 +175,7 @@ function GameCardBase({
 
       </div>
 
-      {installed && removedAgain && <FixBlockedNote />}
+      {installed && removedAgain && <FixBlockedNote onAllowed={retryFix} />}
 
       <div className="copy">
 

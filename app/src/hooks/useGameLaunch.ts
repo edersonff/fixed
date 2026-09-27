@@ -300,6 +300,6 @@ export function useGameLaunch(gameTitle: string, installed: boolean) {
 
   const busy = launching || entry.fixing || phase === "running";
 
-  return { label, press, busy, needsFix, removedAgain: entry.removedAgain, launchMsg };
+  return { label, press, busy, needsFix, removedAgain: entry.removedAgain, launchMsg, retryFix: fix };
 
 }

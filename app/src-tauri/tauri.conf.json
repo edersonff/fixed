@@ -35,7 +35,13 @@
     ],
     "resources": {
       "resources/unrar.exe": "unrar.exe",
-      "resources/unrar-license.txt": "unrar-license.txt"
+      "resources/unrar-license.txt": "unrar-license.txt",
+      "resources/windows-security/allow-games-folder.ps1": "windows-security/allow-games-folder.ps1"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "windows/hooks.nsh"
+      }
     }
   }
 }

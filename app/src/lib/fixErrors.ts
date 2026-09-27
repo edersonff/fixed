@@ -4,7 +4,7 @@ export const GAME_PAGE_NEEDED = "game-page-needed";
 
 const MESSAGES: Record<string, string> = {
 
-  [FILES_REMOVED_AGAIN]: "Windows keeps deleting this game's files. Turn protection off, then press Fix.",
+  [FILES_REMOVED_AGAIN]: "Windows keeps removing this game's online files. Allow the games folder once and FIXED fixes it.",
 
   [GAME_PAGE_NEEDED]: "Open this game's page and press Download to get its files again.",
 

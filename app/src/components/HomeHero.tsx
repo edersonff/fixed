@@ -62,7 +62,7 @@ export function HomeHero({
 
   const installed = useIsGameInstalled(featured?.title ?? "");
 
-  const { label, press, busy, needsFix, removedAgain } = useGameLaunch(featured?.title ?? "", installed);
+  const { label, press, busy, needsFix, removedAgain, retryFix } = useGameLaunch(featured?.title ?? "", installed);
 
   useEffect(() => {
 
@@ -190,7 +190,7 @@ export function HomeHero({
 
         </motion.button>
 
-        {installed && removedAgain && <FixBlockedNote />}
+        {installed && removedAgain && <FixBlockedNote onAllowed={retryFix} />}
 
       </div>
 

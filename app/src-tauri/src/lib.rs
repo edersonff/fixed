@@ -25,6 +25,7 @@ mod steam_user;
 mod user_error;
 mod pipeline_torrent;
 mod state;
+mod windows_security;
 
 #[cfg(test)]
 mod test_support;
@@ -38,6 +39,7 @@ pub use pipeline_http::*;
 pub use pipeline_torrent::*;
 pub use plugin::*;
 pub use state::*;
+pub use windows_security::*;
 
 // Windows GUI builds have no console: eprintln alone vanishes, so every diagnostic line also
 // lands in ~/.cache/fixed/logs/app.log (USERPROFILE-aware via home_dir). This file is the
@@ -301,7 +303,7 @@ pub fn run() {
 
         })
 
-        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game, game_files::game_files_status, fix_flow::fix_game])
+        .invoke_handler(tauri::generate_handler![list_games, find_games, game_detail, game_assets, lane_parts, open_download_window, start_torrent_download, start_http_download, cancel_all_downloads, cancel_download, launch_game, install_plugin, installed_games, open_game_folder, uninstall_game, game_files::game_files_status, fix_flow::fix_game, allow_games_folder])
 
         .run(tauri::generate_context!())
 

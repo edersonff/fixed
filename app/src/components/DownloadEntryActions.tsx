@@ -12,7 +12,7 @@ import { EASE_POP, DUR_SHORT, actionHover, actionPressDown } from '../lib/motion
 
 export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; ready: boolean }) {
 
-  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(gameTitle, ready);
+  const { label, press, busy, needsFix, removedAgain, launchMsg, retryFix } = useGameLaunch(gameTitle, ready);
 
   const { pluginMsg, addPlugin } = usePluginInstall(gameTitle);
 
@@ -93,7 +93,7 @@ export function DownloadEntryActions({ gameTitle, ready }: { gameTitle: string; 
 
       </AnimatePresence>
 
-      {removedAgain && <FixBlockedNote />}
+      {removedAgain && <FixBlockedNote onAllowed={retryFix} />}
 
       {launchMsg && (
 

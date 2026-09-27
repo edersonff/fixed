@@ -18,6 +18,8 @@ export function LibraryCardActions({
 
   onPress,
 
+  onFixAllowed,
+
   onAddPlugin,
 
   onOpenFolder,
@@ -33,6 +35,8 @@ export function LibraryCardActions({
   removedAgain: boolean;
 
   onPress: (event: React.MouseEvent) => void;
+
+  onFixAllowed: () => void;
 
   onAddPlugin: (event: React.MouseEvent) => void;
 
@@ -78,7 +82,7 @@ export function LibraryCardActions({
 
       </motion.button>
 
-      {removedAgain && <FixBlockedNote />}
+      {removedAgain && <FixBlockedNote onAllowed={onFixAllowed} />}
 
       <button type="button" className="ghost" onClick={onAddPlugin}>
 

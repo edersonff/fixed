@@ -58,7 +58,7 @@ export function LibraryCard({
 
   const [logoFailed, setLogoFailed] = useState(false);
 
-  const { label, press, busy, needsFix, removedAgain, launchMsg } = useGameLaunch(game.title, true);
+  const { label, press, busy, needsFix, removedAgain, launchMsg, retryFix } = useGameLaunch(game.title, true);
 
   const { pluginMsg, addPlugin } = usePluginInstall(game.title);
 
@@ -200,6 +200,8 @@ export function LibraryCard({
             needsFix={needsFix}
 
             removedAgain={removedAgain}
+
+            onFixAllowed={retryFix}
 
             onPress={(event) => {
 
